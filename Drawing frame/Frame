@@ -1,0 +1,365 @@
+.model tiny
+.code
+
+VIDEOSEC	equ 0b800h
+GLOBALFRAMELEN	equ 160
+WORDLEN		equ 2
+MAXSIZE		equ 80
+SUBUP		equ 1
+SUBLEFT		equ 10
+SUBOFFSET	equ 5
+TOWORD		equ 2
+
+CENTER		equ 160*10 + 2*36
+
+LEFTHIGH	equ 0000
+RIGHTDOWN	equ 184fh
+BGCOLOR		equ 07h
+
+DURATION	equ 0ffh
+
+org 100h
+Start:		
+		call DRAWFRAME
+
+		mov ax, 4c00h
+		int 21h
+
+
+DRAWFRAME	proc
+	
+GO:		cmp Thecolumbytelen, MAXSIZE
+		je ENDFILE
+
+		call CLEANSCREEN		
+
+		mov bx, VIDEOSEC
+		mov es, bx
+
+		call FINDPLACE
+		mov bx, Where
+		
+		push Lefthighcorner
+		call PRINTSYMBOL
+
+		push Horisontal
+		call LINE
+
+		push Righthighcorner
+		call PRINTSYMBOL
+
+		call BORDERS
+
+		mov bx, Where
+		push Leftlowcorner
+		call PRINTSYMBOL
+
+		push Horisontal
+		call LINE
+
+		push Rightlowcorner
+		call PRINTSYMBOL
+		
+		call PRINTSHADOW
+
+		add Thecolumbytelen, SUBLEFT
+		add Thelinebytelen, SUBUP
+		
+		mov ax, Thecolumbytelen
+		mov bx, TOWORD		
+		mul bx
+		mov Thecolumn, ax
+
+		mov ax, Thelinebytelen
+		mov bx,TOWORD		
+		mul bx
+		mov Theline, ax 
+
+		sub Leftoffset, SUBOFFSET
+		mov bx, Thelinebytelen
+		sub Upoffset, bx
+		sub Upoffset, 1
+
+		call DELAY
+
+		jmp GO
+		
+ENDFILE:	call PRINTMESSAGE		
+		
+		ret	
+DRAWFRAME	endp
+
+
+
+
+
+;prints the line of symbols we put in stack
+LINE		proc near
+
+		pop dx
+		pop ax
+		push dx		
+
+		mov cx, Thecolumbytelen
+
+LINECYC:	call GONEXT
+
+		push ax
+		call PRINTSYMBOL
+
+		loop LINECYC
+
+		ret
+LINE		endp
+
+
+
+
+
+
+;puts the borders of the frame with definite symbol
+BORDERS		proc near
+		mov cx, Thelinebytelen
+
+BORDCYC:	call NEXTLINE
+		mov bx, Where
+		
+		push Vertical
+		call PRINTSYMBOL
+
+		mov bx, Thecolumn
+		add bx, Where
+		mov Where, bx
+
+		push Vertical
+		call PRINTSYMBOL
+
+		cmp cx, Thelinebytelen
+		jne SHADOW
+
+BACK:		loop BORDCYC
+		
+		call NEXTLINE
+
+		ret
+
+SHADOW:		call GONEXT
+
+		push Theshadow
+		call PRINTSYMBOL
+
+		call GOBACK
+
+		jmp BACK
+
+BORDERS		endp
+
+
+
+
+
+
+
+;prints the lowest shadow
+PRINTSHADOW	proc
+
+		call GONEXT		
+
+		push Theshadow
+		call PRINTSYMBOL
+
+		sub Where, WORDLEN
+		mov bx, Where
+		
+		call NEXTLINE
+
+		call GONEXT
+
+		push Theshadow
+		call LINE
+
+		dec Upoffset
+		call FINDPLACE
+
+		call GOBACK
+
+		ret
+PRINTSHADOW	endp
+
+
+
+
+
+
+
+
+
+;sets the variable Where on the next line and the same column
+NEXTLINE	proc near
+
+		inc Upoffset
+		call FINDPLACE		
+		
+		ret
+NEXTLINE	endp
+
+
+;moves Where to the next word
+GONEXT		proc
+		add Where, WORDLEN
+		mov bx, Where
+
+		ret
+GONEXT		endp
+
+
+;moves Where to the previous word
+GOBACK		proc
+		sub Where, WORDLEN
+		mov bx, Where
+
+		ret
+GOBACK		endp
+
+
+
+
+
+
+
+
+;sets Where to the place on the screen according to Upoffset and Leftoffset 
+FINDPLACE	proc near
+		mov ax, 0
+		add ax, Upoffset
+		mov bx, GLOBALFRAMELEN
+		mul bx
+		mov Where, ax
+		mov ax, Leftoffset
+		mov bx, WORDLEN
+		mul bx
+		add ax, Where
+		mov Where, ax
+
+		ret
+FINDPLACE	endp
+
+
+
+
+
+
+
+;prints the symbol that was put in stack
+PRINTSYMBOL	proc near
+
+		pop dx
+		pop ax
+		push dx
+
+		mov es:[bx], ax
+
+		ret
+PRINTSYMBOL	endp
+
+
+
+
+
+
+;cleans the screen
+CLEANSCREEN	proc near
+		
+		mov ax, 0600h
+		mov bh, BGCOLOR
+		mov cx, LEFTHIGH
+		mov dx, RIGHTDOWN	
+		int 10h
+
+		ret
+CLEANSCREEN	endp
+
+
+
+
+
+
+
+;delays the work of program on abt 0.5 seconds
+DELAY		proc near
+		
+		mov cx, DURATION
+L:		mov bx, DURATION
+INNING:		cmp bx, 0
+		je STOP
+		dec bx
+		jmp INNING
+STOP:		loop L
+		
+
+		ret
+DELAY		endp
+
+
+
+
+
+
+
+;prints the whole message by addressing to videomemory
+PRINTMESSAGE	proc
+
+		mov bx, offset Message
+		mov si, bx
+		mov Where, CENTER
+
+THEPRINTING:	cmp Counter, 0
+		je DOBREAK 
+
+		mov al, [bx]
+		mov ah, 0dh
+		push ax
+		mov bx, Where
+		call PRINTSYMBOL
+
+		add Where, TOWORD
+
+		dec Counter
+
+		inc si
+		mov bx, si
+		
+		jmp THEPRINTING
+
+DOBREAK:	ret
+PRINTMESSAGE	endp
+
+
+
+
+
+
+
+;variables
+Counter		dw 8
+Message		db, 'The End.', '$'
+
+Thecolumn	dw 40
+Thecolumbytelen	dw 20
+Theline		dw 8
+Thelinebytelen	dw 4
+Where		dw 0
+
+Leftoffset	dw 30
+Upoffset	dw 10
+
+Lefthighcorner	dw 0dc9h
+Horisontal	dw 0dcdh
+Righthighcorner	dw 0dbbh
+Leftlowcorner	dw 0dc8h
+Vertical	dw 0dbah
+Rightlowcorner	dw 0dbch
+Theshadow	dw 07fb1h
+
+End		Start
+		
