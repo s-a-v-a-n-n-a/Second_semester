@@ -1,81 +1,277 @@
 .model tiny
 .code
+.386
 
-VIDEOSEC	equ 0b800h
+VIDEOSEC		equ 0b800h
 GLOBALFRAMELEN	equ 160
-WORDLEN		equ 2
-MAXSIZE		equ 80
-SUBUP		equ 1
-SUBLEFT		equ 10
-SUBOFFSET	equ 5
-TOWORD		equ 2
+WORDLEN			equ 2
+MAXSIZE			equ 80
+SUBUP			equ 1
+SUBLEFT			equ 5
+SUBOFFSET		equ 5
+TOWORD			equ 2
 
-CENTER		equ 160*10 + 2*40
+MAXLEN			equ 160
+MAXWIDTH		equ 40
 
-LEFTHIGH	equ 0000
-RIGHTDOWN	equ 184fh
-BGCOLOR		equ 07h
+CENTER			equ 160*10 + 2*40
 
-DURATION	equ 0ffh
+LEFTHIGHCORN	equ 0000
+RIGHTDOWNCORN	equ 184fh
+BGCOLOR			equ 07h
+
+DURATION		equ 0ffh
 
 Lefthighcorner	equ 0dc9h
-Horisontal	equ 0dcdh
+Horisontal		equ 0dcdh
 Righthighcorner	equ 0dbbh
 Leftlowcorner	equ 0dc8h
-Vertical	equ 0dbah
+Vertical		equ 0dbah
 Rightlowcorner	equ 0dbch
-Theshadow	equ 07fb1h
+Thefilling		equ 00bch
+Theshadow		equ 07fb1h
 
 org 100h
-Start:		
-		call DRAWFRAME
+Start:		mov ax, Upoffset
+		mov dx, Leftoffset
+		
+		push ax
+		push dx
+		push 20
+		push 2
+		push Rightlowcorner
+		push Leftlowcorner
+		push Theshadow
+		push Thefilling
+		push Vertical
+		push Righthighcorner
+		push Horisontal
+		push Lefthighcorner
+		call ANIMATION
+		add sp, 12 * 2
+
+		mov ah, 086h
+		mov cx, 01eh*5
+		mov dx, 8480h
+		int 15h
 
 		mov ax, 4c00h
 		int 21h
 
+MAXIMUM		proc number_1, number_2
+			pop ax
+			push bp
+			push ax
 
-DRAWFRAME	proc
-	
-GO:		cmp Thecolumbytelen, MAXSIZE
-		je ENDFILE
+			mov bp, sp
+
+			mov cx, number_1
+			mov dx, number_2
+			cmp cx, dx
+			jae FIRST_BIGGER
+
+SECOND_BIGGER:
+			mov ax, dx
+			jmp END_MAX
+
+FIRST_BIGGER:	
+			mov ax, cx
+
+END_MAX:	pop dx
+			pop bp
+			push dx	
+			ret
+MAXIMUM		endp
+
+
+
+
+ANIMATION	proc Left1, Horizontal_Symb, Right1, Vertical_Symb, Filling_Symb, Shadow_Symb, Left2, Right2, Frame_Height, Frame_Width, Point_x, Point_y
+
+			pop ax
+			push bp
+			push ax
+
+			mov bp, sp
+
+			mov ax, Frame_Height
+			shr ax, 1			;ax = Frame_Height/2
+			push ax				;ax = bp - 2
+
+			mov ax, Frame_Width
+			shr ax, 1			;ax = Frame_Width/2
+			push ax
+
+			push Frame_Width
+			push Frame_Height
+			call MAXIMUM
+			add sp, 2 * 2
+
+			mov cx, ax
+
+			mov dx, 1				;current width
+			mov ax, 1			;current height
+
+ANIMATION_LOOP:	
+			push dx
+			push ax
+			mov ax, [bp-6]
+			mov dx, [bp-8]
+			push cx
+
+			int 3
+			push Point_y
+			push Point_x
+			push dx
+			push ax
+			push Right2
+			push Left2
+			push Shadow_Symb
+			push Filling_Symb
+			push Vertical_Symb
+			push Right1
+			push Horizontal_Symb
+			push Left1
+			call DRAWFRAME
+			add sp, 12 * 2 
+
+			pop cx
+			pop dx
+			pop ax
+
+			cmp ax, Frame_Height
+			jbe MOVE_UP
+			jne NEXT_CMP
+
+MOVE_UP:	add ax, 2
+			
+; NEXT_CMP:	cmp dx, Frame_Width
+; 			jbe MOVE_LEFT
+; 			jne END_CMP
+
+; MOVE_LEFT:	add dx, 2
+
+; END_CMP:	cmp Point_y, 0
+; 			jz NEXT_CMP_0
+
+; 			dec Point_y
+
+; NEXT_CMP_0: cmp Point_y, 0
+; 			jz NEXT_ACTION
+; 			dec Point_x
+
+; NEXT_ACTION:
+; 			push ax
+; 			push dx
+
+; 			add ax, Point_y
+; 			cmp ax, 35
+; 			jz NEXT_CMP_0
+
+; 			dec Point_y
+
+; NEXT_CMP_0: cmp Point_y, 0
+; 			jz NEXT_DOING
+; 			dec Point_x
+
+; NEXT_DOING:
+			push ax
+			push cx
+			push dx
+
+			mov ah, 086h
+			mov cx, 1h
+			mov dx, 8480h
+			int 15h	
+
+			pop dx
+			pop cx
+			pop ax
+			
+			loop ANIMATION_LOOP	
+
+			pop ax
+			pop ax
+			pop dx
+			pop bp
+			push dx	
+			int 3
+			ret
+ANIMATION	endp
+
+
+DRAWFRAME	proc Lefthigh, Thehorisontal, Righthigh, Thevertical, Filling, Theshadowparam, Leftlow, Rightlow, Thelength, Thewidth, Theleftoffset, Theupoffset
+		pop ax
+		push bp
+		push ax
+
+		mov bp, sp
 
 		call CLEANSCREEN		
 
 		mov bx, VIDEOSEC
 		mov es, bx
 
-		call FINDPLACE
-		mov bx, ax
+		push Theupoffset
+		push Theleftoffset
+		push Thelength
+		push Righthigh
+		push Horisontal
+		push Lefthigh
+		call Line
+		add sp, 6 * 2
+
+		mov cx, Thewidth
+STARTLOOP:	inc Theupoffset
+
+		push cx
+
+		push Theupoffset
+		push Theleftoffset
+		push Thelength
+		push Thevertical
+		push Filling
+		push Thevertical
+		call Line
+		add sp, 6 * 2
+
+		call GONEXT
+		mov ax, Theshadowparam
+		call PRINTSYMBOL
+
+		pop cx
+		loop STARTLOOP
+
+
+		push Theupoffset
+		push Theleftoffset
+		push Thelength
+		push Rightlow
+		push Horisontal
+		push Leftlow
+		call Line
+		add sp, 6 * 2	
+
+		call GONEXT
+		mov ax, Theshadowparam
+		call PRINTSYMBOL
+
+		inc Theleftoffset
+		inc Theupoffset
+
+		push Theupoffset
+		push Theleftoffset
+		push Thelength
+		push Theshadowparam
+		push Theshadowparam
+		push Theshadowparam
+		call Line
+		add sp, 6 * 2	
 		
-		mov ax, Lefthighcorner
-		call PRINTSYMBOL
-
-		mov ax, Horisontal
-		call LINE
-
-		mov ax, Righthighcorner
-		call PRINTSYMBOL
-
-		call BORDERS
-
-		mov ax, Leftlowcorner
-		call PRINTSYMBOL
-
-		mov ax, Horisontal
-		call LINE
-
-		mov ax, Rightlowcorner
-		call PRINTSYMBOL
+		pop dx
+		pop bp
 		
-		call PRINTSHADOW
-
-		call NEXTFRAMEPOSITION
-
-		call DELAY
-
-		jmp GO
-		
-ENDFILE:	call PRINTMESSAGE		
+		push dx		
 		
 		ret	
 DRAWFRAME	endp
@@ -84,105 +280,44 @@ DRAWFRAME	endp
 
 ;prints the line of symbols we put in stack
 ;ax, cx, dx spoiled
-LINE		proc near
+LINE		proc Left, Thehorisontalsymb, Right, Thelen, Theleftoffset, Theupoffset
+		
+		pop ax
+		push bp
+		push ax
 
-		mov cx, Thecolumbytelen
+		mov bp, sp
 
+		push Theupoffset
+		push Theleftoffset	
+		call FINDPLACE
+		mov bx, ax
+		pop ax
+		pop ax
+
+		mov cx, Thelen
+		
+		mov ax, Left
+		call PRINTSYMBOL
+
+		mov ax, Thehorisontalsymb
+			
 LINECYC:	call GONEXT
 
 		call PRINTSYMBOL
-
+		;int 3
 		loop LINECYC
+
+		mov ax, Right
+		call PRINTSYMBOL
+
+		pop dx
+		pop bp
+		
+		push dx
 
 		ret
 LINE		endp
-
-
-
-
-
-
-;puts the borders of the frame with definite symbol
-;cx spoiled
-BORDERS		proc near
-		mov cx, Thelinebytelen
-
-BORDCYC:	push cx
-		call NEXTLINE
-		
-		mov ax, Vertical
-		call PRINTSYMBOL
-
-		add bx, Thecolumn
-
-		mov ax, Vertical
-		call PRINTSYMBOL
-
-		pop cx
-		cmp cx, Thelinebytelen
-		push cx
-		jne SHADOW
-BACK:		pop cx
-		loop BORDCYC
-		
-		call NEXTLINE
-		
-		ret
-
-SHADOW:		call GONEXT
-
-		mov ax, Theshadow
-		call PRINTSYMBOL
-
-		call GOBACK
-
-		jmp BACK
-
-BORDERS		endp
-
-
-
-
-;prints the lowest shadow
-PRINTSHADOW	proc
-
-		call GONEXT		
-
-		mov ax, Theshadow
-		call PRINTSYMBOL
-
-		sub bx, WORDLEN
-		
-		call NEXTLINE
-
-		call GONEXT
-
-		mov ax, Theshadow
-		call LINE
-
-		dec Upoffset
-		call FINDPLACE
-		mov bx, ax
-
-		call GOBACK
-
-		ret
-PRINTSHADOW	endp
-
-
-
-
-
-;sets the variable Where on the next line and the same column
-NEXTLINE	proc near
-
-		inc Upoffset
-		call FINDPLACE
-		mov bx, ax		
-		
-		ret
-NEXTLINE	endp
-
 
 
 
@@ -196,7 +331,6 @@ GONEXT		endp
 
 
 
-
 ;moves Where to the previous word
 GOBACK		proc
 		sub bx, WORDLEN
@@ -206,32 +340,39 @@ GOBACK		endp
 
 
 
-
-
-
 ;sets Where to the place on the screen according to Upoffset and Leftoffset
 ;ax, cx, dx spoiled
 ;result in ax 
-FINDPLACE	proc near
+FINDPLACE	proc Theleftoffset, Theupoffset
+		pop dx
+		push bp
+		push dx
+
+		mov bp, sp
+
 		push bx
-		mov ax, Leftoffset
+		
+		mov ax, Theleftoffset
+		
 		mov cx, WORDLEN
 		mul cx
 	
 		mov bx, ax
 		
-		mov ax, Upoffset
+		mov ax, Theupoffset
+		
 		mov cx, GLOBALFRAMELEN
 		mul cx
 		
 		add ax, bx
 		pop bx
+		
+		pop dx
+		pop bp
+		push dx
 
 		ret
 FINDPLACE	endp
-
-
-
 
 
 
@@ -247,51 +388,17 @@ PRINTSYMBOL	endp
 
 
 
-
-
-;ax, cx are spoiled
-NEXTFRAMEPOSITION 	proc
-			
-			add Thecolumbytelen, SUBLEFT
-			add Thelinebytelen, SUBUP
-		
-			mov ax, Thecolumbytelen
-			mov cx, TOWORD		
-			mul cx
-			mov Thecolumn, ax
-
-			mov ax, Thelinebytelen
-			mov cx,TOWORD		
-			mul cx
-			mov Theline, ax 
-
-			sub Leftoffset, SUBOFFSET
-			mov cx, Thelinebytelen
-			sub Upoffset, cx
-			sub Upoffset, 1
-
-			ret
-NEXTFRAMEPOSITION 	endp
-
-
-
-
-
-
 ;cleans the screen
 CLEANSCREEN	proc near
 		
 		mov ax, 0600h
 		mov bh, BGCOLOR
-		mov cx, LEFTHIGH
-		mov dx, RIGHTDOWN	
+		mov cx, LEFTHIGHCORN
+		mov dx, RIGHTDOWNCORN	
 		int 10h
 
 		ret
 CLEANSCREEN	endp
-
-
-
 
 
 
@@ -311,9 +418,6 @@ STOP:		loop OUTCYCLE
 
 		ret
 DELAY		endp
-
-
-
 
 
 
@@ -348,22 +452,13 @@ PRINTMESSAGE	endp
 
 
 
-
-
-
 ;variables
 Counter		dw 8
 Message		db, 'The End.', '$'
 MesLen		dw $-Message
 
-Thecolumn	dw 40	;need to get rid of them
-Thecolumbytelen	dw 20	;
-Theline		dw 8	;
-Thelinebytelen	dw 4	;
-;Where		dw 0
-
 Leftoffset	dw 30
 Upoffset	dw 10
 
 End		Start
-		
+				
