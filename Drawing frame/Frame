@@ -10,13 +10,21 @@ SUBLEFT		equ 10
 SUBOFFSET	equ 5
 TOWORD		equ 2
 
-CENTER		equ 160*10 + 2*36
+CENTER		equ 160*10 + 2*40
 
 LEFTHIGH	equ 0000
 RIGHTDOWN	equ 184fh
 BGCOLOR		equ 07h
 
 DURATION	equ 0ffh
+
+Lefthighcorner	equ 0dc9h
+Horisontal	equ 0dcdh
+Righthighcorner	equ 0dbbh
+Leftlowcorner	equ 0dc8h
+Vertical	equ 0dbah
+Rightlowcorner	equ 0dbch
+Theshadow	equ 07fb1h
 
 org 100h
 Start:		
@@ -37,48 +45,31 @@ GO:		cmp Thecolumbytelen, MAXSIZE
 		mov es, bx
 
 		call FINDPLACE
-		mov bx, Where
+		mov bx, ax
 		
-		push Lefthighcorner
+		mov ax, Lefthighcorner
 		call PRINTSYMBOL
 
-		push Horisontal
+		mov ax, Horisontal
 		call LINE
 
-		push Righthighcorner
+		mov ax, Righthighcorner
 		call PRINTSYMBOL
 
 		call BORDERS
 
-		mov bx, Where
-		push Leftlowcorner
+		mov ax, Leftlowcorner
 		call PRINTSYMBOL
 
-		push Horisontal
+		mov ax, Horisontal
 		call LINE
 
-		push Rightlowcorner
+		mov ax, Rightlowcorner
 		call PRINTSYMBOL
 		
 		call PRINTSHADOW
 
-		add Thecolumbytelen, SUBLEFT
-		add Thelinebytelen, SUBUP
-		
-		mov ax, Thecolumbytelen
-		mov bx, TOWORD		
-		mul bx
-		mov Thecolumn, ax
-
-		mov ax, Thelinebytelen
-		mov bx,TOWORD		
-		mul bx
-		mov Theline, ax 
-
-		sub Leftoffset, SUBOFFSET
-		mov bx, Thelinebytelen
-		sub Upoffset, bx
-		sub Upoffset, 1
+		call NEXTFRAMEPOSITION
 
 		call DELAY
 
@@ -91,20 +82,14 @@ DRAWFRAME	endp
 
 
 
-
-
 ;prints the line of symbols we put in stack
+;ax, cx, dx spoiled
 LINE		proc near
-
-		pop dx
-		pop ax
-		push dx		
 
 		mov cx, Thecolumbytelen
 
 LINECYC:	call GONEXT
 
-		push ax
 		call PRINTSYMBOL
 
 		loop LINECYC
@@ -118,34 +103,35 @@ LINE		endp
 
 
 ;puts the borders of the frame with definite symbol
+;cx spoiled
 BORDERS		proc near
 		mov cx, Thelinebytelen
 
-BORDCYC:	call NEXTLINE
-		mov bx, Where
+BORDCYC:	push cx
+		call NEXTLINE
 		
-		push Vertical
+		mov ax, Vertical
 		call PRINTSYMBOL
 
-		mov bx, Thecolumn
-		add bx, Where
-		mov Where, bx
+		add bx, Thecolumn
 
-		push Vertical
+		mov ax, Vertical
 		call PRINTSYMBOL
 
+		pop cx
 		cmp cx, Thelinebytelen
+		push cx
 		jne SHADOW
-
-BACK:		loop BORDCYC
+BACK:		pop cx
+		loop BORDCYC
 		
 		call NEXTLINE
-
+		
 		ret
 
 SHADOW:		call GONEXT
 
-		push Theshadow
+		mov ax, Theshadow
 		call PRINTSYMBOL
 
 		call GOBACK
@@ -157,29 +143,26 @@ BORDERS		endp
 
 
 
-
-
-
 ;prints the lowest shadow
 PRINTSHADOW	proc
 
 		call GONEXT		
 
-		push Theshadow
+		mov ax, Theshadow
 		call PRINTSYMBOL
 
-		sub Where, WORDLEN
-		mov bx, Where
+		sub bx, WORDLEN
 		
 		call NEXTLINE
 
 		call GONEXT
 
-		push Theshadow
+		mov ax, Theshadow
 		call LINE
 
 		dec Upoffset
 		call FINDPLACE
+		mov bx, ax
 
 		call GOBACK
 
@@ -190,33 +173,33 @@ PRINTSHADOW	endp
 
 
 
-
-
-
-
 ;sets the variable Where on the next line and the same column
 NEXTLINE	proc near
 
 		inc Upoffset
-		call FINDPLACE		
+		call FINDPLACE
+		mov bx, ax		
 		
 		ret
 NEXTLINE	endp
 
 
+
+
 ;moves Where to the next word
 GONEXT		proc
-		add Where, WORDLEN
-		mov bx, Where
+		add bx, WORDLEN
 
 		ret
 GONEXT		endp
 
 
+
+
+
 ;moves Where to the previous word
 GOBACK		proc
-		sub Where, WORDLEN
-		mov bx, Where
+		sub bx, WORDLEN
 
 		ret
 GOBACK		endp
@@ -226,20 +209,23 @@ GOBACK		endp
 
 
 
-
-
-;sets Where to the place on the screen according to Upoffset and Leftoffset 
+;sets Where to the place on the screen according to Upoffset and Leftoffset
+;ax, cx, dx spoiled
+;result in ax 
 FINDPLACE	proc near
-		mov ax, 0
-		add ax, Upoffset
-		mov bx, GLOBALFRAMELEN
-		mul bx
-		mov Where, ax
+		push bx
 		mov ax, Leftoffset
-		mov bx, WORDLEN
-		mul bx
-		add ax, Where
-		mov Where, ax
+		mov cx, WORDLEN
+		mul cx
+	
+		mov bx, ax
+		
+		mov ax, Upoffset
+		mov cx, GLOBALFRAMELEN
+		mul cx
+		
+		add ax, bx
+		pop bx
 
 		ret
 FINDPLACE	endp
@@ -251,16 +237,41 @@ FINDPLACE	endp
 
 
 ;prints the symbol that was put in stack
+;ax, dx are spoiled
 PRINTSYMBOL	proc near
-
-		pop dx
-		pop ax
-		push dx
 
 		mov es:[bx], ax
 
 		ret
 PRINTSYMBOL	endp
+
+
+
+
+
+;ax, cx are spoiled
+NEXTFRAMEPOSITION 	proc
+			
+			add Thecolumbytelen, SUBLEFT
+			add Thelinebytelen, SUBUP
+		
+			mov ax, Thecolumbytelen
+			mov cx, TOWORD		
+			mul cx
+			mov Thecolumn, ax
+
+			mov ax, Thelinebytelen
+			mov cx,TOWORD		
+			mul cx
+			mov Theline, ax 
+
+			sub Leftoffset, SUBOFFSET
+			mov cx, Thelinebytelen
+			sub Upoffset, cx
+			sub Upoffset, 1
+
+			ret
+NEXTFRAMEPOSITION 	endp
 
 
 
@@ -286,15 +297,16 @@ CLEANSCREEN	endp
 
 
 ;delays the work of program on abt 0.5 seconds
+;cx, dx are spoiled
 DELAY		proc near
 		
 		mov cx, DURATION
-L:		mov bx, DURATION
-INNING:		cmp bx, 0
+OUTCYCLE:	mov dx, DURATION
+INNING:		cmp dx, 0
 		je STOP
-		dec bx
+		dec dx
 		jmp INNING
-STOP:		loop L
+STOP:		loop OUTCYCLE
 		
 
 		ret
@@ -311,25 +323,24 @@ PRINTMESSAGE	proc
 
 		mov bx, offset Message
 		mov si, bx
-		mov Where, CENTER
+		mov dx, CENTER
+		sub dx, MesLen
+			
+		mov bx, dx
 
-THEPRINTING:	cmp Counter, 0
-		je DOBREAK 
+THEPRINTING:	mov ah, 0dh
+		mov si, offset Message
+		mov di, 0b800h
+		mov es, di
+			
+		mov di, bx
+		cld
 
-		mov al, [bx]
-		mov ah, 0dh
-		push ax
-		mov bx, Where
-		call PRINTSYMBOL
-
-		add Where, TOWORD
-
-		dec Counter
-
-		inc si
-		mov bx, si
-		
-		jmp THEPRINTING
+PRINTINGCYCLE:	lodsb
+		cmp al, '$'
+		je DOBREAK
+		stosw
+		jmp PRINTINGCYCLE
 
 DOBREAK:	ret
 PRINTMESSAGE	endp
@@ -343,23 +354,16 @@ PRINTMESSAGE	endp
 ;variables
 Counter		dw 8
 Message		db, 'The End.', '$'
+MesLen		dw $-Message
 
-Thecolumn	dw 40
-Thecolumbytelen	dw 20
-Theline		dw 8
-Thelinebytelen	dw 4
-Where		dw 0
+Thecolumn	dw 40	;need to get rid of them
+Thecolumbytelen	dw 20	;
+Theline		dw 8	;
+Thelinebytelen	dw 4	;
+;Where		dw 0
 
 Leftoffset	dw 30
 Upoffset	dw 10
-
-Lefthighcorner	dw 0dc9h
-Horisontal	dw 0dcdh
-Righthighcorner	dw 0dbbh
-Leftlowcorner	dw 0dc8h
-Vertical	dw 0dbah
-Rightlowcorner	dw 0dbch
-Theshadow	dw 07fb1h
 
 End		Start
 		
