@@ -54,9 +54,62 @@ Start:		mov ax, Upoffset
 		mov cx, 01eh*5
 		mov dx, 8480h
 		int 15h
+		
+		; mov ax, CENTER
+		; mov cx, 3802h
+		; push ax 
+		; push cx
+		; call CONVERTER_16
+		; add sp, 2 * 2
+
+		; mov ah, 086h
+		; mov cx, 1h
+		; mov dx, 8480h
+		; int 15h
 
 		mov ax, 4c00h
 		int 21h
+		
+CONVERTER_16	proc
+
+				; pop ax
+				; push bp
+				; push ax
+
+				; mov bp, sp
+				
+				mov dx, 0edah
+				mov di, VIDEOSEC
+				mov es, di
+				mov di, CENTER
+CONTINUE_CONVERTING_16:
+				
+				mov ax, dx
+				and ax, 0Fh
+
+				mov ah, 4eh
+
+				cmp al, 9
+				ja ADD_LETTER
+				add al, '0'
+				jmp GO_AWAY
+ADD_LETTER:		add al, 'A' - 10
+GO_AWAY:
+				stosw
+				;call debug
+
+				shr dx, 4
+
+				cmp dx, 0
+				ja CONTINUE_CONVERTING_16
+
+				; pop dx
+				; pop bp
+				; push dx	
+
+				ret
+CONVERTER_16	endp		
+
 
 MAXIMUM		proc number_1, number_2
 			pop ax
