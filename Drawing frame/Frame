@@ -14,7 +14,7 @@ TOWORD			equ 2
 MAXLEN			equ 160
 MAXWIDTH		equ 40
 
-CENTER			equ 160*10 + 2*40
+CENTER			equ 160*5 + 2*8
 
 LEFTHIGHCORN	equ 0000
 RIGHTDOWNCORN	equ 184fh
@@ -31,14 +31,22 @@ Rightlowcorner	equ 0dbch
 Thefilling		equ 00bch
 Theshadow		equ 07fb1h
 
+Leftoffset		equ 3
+Upoffset		equ 3
+
+Number_to_convert equ 0edah
+
 org 100h
-Start:		mov ax, Upoffset
+Start:		
+		call CLEANSCREEN
+
+		mov ax, Upoffset
 		mov dx, Leftoffset
 		
 		push ax
 		push dx
-		push 20
-		push 2
+		push 36
+		push 34
 		push Rightlowcorner
 		push Leftlowcorner
 		push Theshadow
@@ -51,43 +59,202 @@ Start:		mov ax, Upoffset
 		add sp, 12 * 2
 
 		mov ah, 086h
-		mov cx, 01eh*5
+		mov cx, 01h
 		mov dx, 8480h
 		int 15h
-		
-		; mov ax, CENTER
-		; mov cx, 3802h
-		; push ax 
-		; push cx
-		; call CONVERTER_16
-		; add sp, 2 * 2
 
-		; mov ah, 086h
-		; mov cx, 1h
-		; mov dx, 8480h
-		; int 15h
+		
+		push 4
+		push 4
+		push 30
+		push 4
+		push Rightlowcorner
+		push Leftlowcorner
+		push Theshadow
+		push Thefilling
+		push Vertical
+		push Righthighcorner
+		push Horisontal
+		push Lefthighcorner
+		call ANIMATION
+		add sp, 12 * 2
+
+		mov ah, 086h
+		mov cx, 01h
+		mov dx, 8480h
+		int 15h
+
+		push 4 5 MesLen_16 offset Message_16
+		call PRINTMESSAGE
+		add sp, 4 * 2
+
+		;int 3
+
+		push Number_to_convert
+		push 5
+		push 5
+		push 0Fh
+		push 4
+		call BIT_CONVERTER
+		add sp, 5 * 2
+
+		push 8
+		push 4
+		push 30
+		push 4
+		push Rightlowcorner
+		push Leftlowcorner
+		push Theshadow
+		push Thefilling
+		push Vertical
+		push Righthighcorner
+		push Horisontal
+		push Lefthighcorner
+		call ANIMATION
+		add sp, 12 * 2
+
+		mov ah, 086h
+		mov cx, 01h
+		mov dx, 8480h
+		int 15h
+
+		push 8 5 MesLen_8 offset Message_8
+		call PRINTMESSAGE
+		add sp, 4 * 2
+
+		push Number_to_convert
+		push 9
+		push 5
+		push 07h
+		push 3
+		call BIT_CONVERTER
+		add sp, 5 * 2
+
+
+		push 12
+		push 4
+		push 30
+		push 4
+		push Rightlowcorner
+		push Leftlowcorner
+		push Theshadow
+		push Thefilling
+		push Vertical
+		push Righthighcorner
+		push Horisontal
+		push Lefthighcorner
+		call ANIMATION
+		add sp, 12 * 2
+
+		mov ah, 086h
+		mov cx, 01h
+		mov dx, 8480h
+		int 15h
+
+		push 12 5 MesLen_2 offset Message_2
+		call PRINTMESSAGE
+		add sp, 4 * 2
+
+		push Number_to_convert
+		push 13
+		push 5
+		push 01h
+		push 1
+		call BIT_CONVERTER
+		add sp, 5 * 2
+
+
+		push 16
+		push 4
+		push 30
+		push 4
+		push Rightlowcorner
+		push Leftlowcorner
+		push Theshadow
+		push Thefilling
+		push Vertical
+		push Righthighcorner
+		push Horisontal
+		push Lefthighcorner
+		call ANIMATION
+		add sp, 12 * 2
+
+		mov ah, 086h
+		mov cx, 01h
+		mov dx, 8480h
+		int 15h
+
+		push 16 5 MesLen_10 offset Message_10
+		call PRINTMESSAGE
+		add sp, 4 * 2
+
+		push Number_to_convert
+		push 17
+		push 5
+		call CONVERTER_10
+		add sp, 3 * 2
+
+		mov ah, 086h
+		mov cx, 1h
+		mov dx, 8480h
+		int 15h
 
 		mov ax, 4c00h
 		int 21h
-		
-CONVERTER_16	proc
+
+BIT_CONVERTER	proc system_to_convert, convertion_mask, x_coordinate, y_coordinate, bit_number
 
 				; pop ax
 				; push bp
 				; push ax
-
-				; mov bp, sp
+				push bp
+				mov bp, sp
+				push cx
 				
-				mov dx, 0edah
 				mov di, VIDEOSEC
 				mov es, di
-				mov di, CENTER
+				;mov di, CENTER
+
+				push y_coordinate
+				push x_coordinate
+				call FINDPLACE
+				add sp, 2 * 2
+				mov di, ax
+
+				mov dx, bit_number
+				xor cx, cx
+
+				std
+CONTINUE_COUNTING:
+				
+				mov ax, dx
+				and ax, convertion_mask
+
+				;mov ah, 0dh
+
+				;stosw
+				;call debug
+				push cx
+
+				mov cl, byte ptr system_to_convert
+				shr dx, cl
+
+				pop cx
+				inc cx
+
+				cmp dx, 0
+				ja CONTINUE_COUNTING
+
+
+				mov dx, bit_number
+				add di, cx
+				add di, cx
 CONTINUE_CONVERTING_16:
 				
 				mov ax, dx
-				and ax, 0Fh
+				and ax, convertion_mask
 
-				mov ah, 4eh
+				mov ah, 0dh
 
 				cmp al, 9
 				ja ADD_LETTER
@@ -98,23 +265,91 @@ GO_AWAY:
 				stosw
 				;call debug
 
-				shr dx, 4
+				mov cl, byte ptr system_to_convert
+				shr dx, cl
 
 				cmp dx, 0
 				ja CONTINUE_CONVERTING_16
 
 				; pop dx
-				; pop bp
+				pop cx
+				pop bp
 				; push dx	
 
 				ret
-CONVERTER_16	endp		
+BIT_CONVERTER	endp
+
+
+CONVERTER_10	proc x_coordinate, y_coordinate, the_number
+
+				; pop ax
+				; push bp
+				; push ax
+				push bp
+				mov bp, sp
+				push cx
+				
+				mov di, VIDEOSEC
+				mov es, di
+				;mov di, CENTER
+
+				push y_coordinate
+				push x_coordinate
+				call FINDPLACE
+				add sp, 2 * 2
+				mov di, ax
+
+				mov ax, the_number
+				xor cx, cx
+
+				std
+CONTINUE_COUNTING_DIJITS:
+				
+				push cx
+				
+				xor dx, dx
+				mov bx, 10
+				div bx
+
+				pop cx
+				inc cx
+
+				cmp ax, 0
+				ja CONTINUE_COUNTING_DIJITS
+
+
+				mov ax, the_number
+				add di, cx
+				add di, cx
+CONTINUE_CONVERTING_10:
+				
+				xor dx, dx
+				mov bx, 10
+				div bx
+				
+				push ax
+				mov ax, dx
+				mov ah, 0dh
+
+				add al, '0'
+				
+				stosw
+				;call debug
+				pop ax
+				cmp ax, 0
+				ja CONTINUE_CONVERTING_10
+
+				; pop dx
+				pop cx
+				pop bp
+				; push dx	
+
+				ret
+CONVERTER_10	endp		
 
 
 MAXIMUM		proc number_1, number_2
-			pop ax
 			push bp
-			push ax
 
 			mov bp, sp
 
@@ -130,9 +365,7 @@ SECOND_BIGGER:
 FIRST_BIGGER:	
 			mov ax, cx
 
-END_MAX:	pop dx
-			pop bp
-			push dx	
+END_MAX:	pop bp
 			ret
 MAXIMUM		endp
 
@@ -141,10 +374,7 @@ MAXIMUM		endp
 
 ANIMATION	proc Left1, Horizontal_Symb, Right1, Vertical_Symb, Filling_Symb, Shadow_Symb, Left2, Right2, Frame_Height, Frame_Width, Point_x, Point_y
 
-			pop ax
 			push bp
-			push ax
-
 			mov bp, sp
 
 			mov ax, Frame_Height
@@ -168,15 +398,15 @@ ANIMATION	proc Left1, Horizontal_Symb, Right1, Vertical_Symb, Filling_Symb, Shad
 ANIMATION_LOOP:	
 			push dx
 			push ax
-			mov ax, [bp-6]
-			mov dx, [bp-8]
+			; mov ax, [bp-2]
+			; mov dx, [bp-4]
 			push cx
 
-			int 3
+			;int 3
 			push Point_y
 			push Point_x
-			push dx
 			push ax
+			push dx
 			push Right2
 			push Left2
 			push Shadow_Symb
@@ -188,79 +418,60 @@ ANIMATION_LOOP:
 			call DRAWFRAME
 			add sp, 12 * 2 
 
+			;int 3
+
 			pop cx
-			pop dx
 			pop ax
+			pop dx
 
-			cmp ax, Frame_Height
-			jbe MOVE_UP
-			jne NEXT_CMP
+			;int 3
 
-MOVE_UP:	add ax, 2
+			cmp ax, [bp-2]
+			;jbe MOVE_UP
+			jae NEXT_CMP
+ 
+MOVE_UP:	inc ax
 			
-; NEXT_CMP:	cmp dx, Frame_Width
-; 			jbe MOVE_LEFT
-; 			jne END_CMP
+NEXT_CMP:	cmp dx, [bp-4]
+			;jbe MOVE_LEFT
+			jae END_CMP
 
-; MOVE_LEFT:	add dx, 2
+MOVE_LEFT:	inc dx
 
-; END_CMP:	cmp Point_y, 0
-; 			jz NEXT_CMP_0
+END_CMP:
+			;int 3
 
-; 			dec Point_y
-
-; NEXT_CMP_0: cmp Point_y, 0
-; 			jz NEXT_ACTION
-; 			dec Point_x
-
-; NEXT_ACTION:
-; 			push ax
-; 			push dx
-
-; 			add ax, Point_y
-; 			cmp ax, 35
-; 			jz NEXT_CMP_0
-
-; 			dec Point_y
-
-; NEXT_CMP_0: cmp Point_y, 0
-; 			jz NEXT_DOING
-; 			dec Point_x
-
-; NEXT_DOING:
 			push ax
 			push cx
 			push dx
 
-			mov ah, 086h
-			mov cx, 1h
-			mov dx, 8480h
-			int 15h	
+			; mov ah, 086h
+			; mov cx, 01h
+			; mov dx, 8480h
+			; int 15h	
 
 			pop dx
 			pop cx
 			pop ax
+
+			;int 3
 			
 			loop ANIMATION_LOOP	
 
 			pop ax
 			pop ax
-			pop dx
 			pop bp
-			push dx	
-			int 3
+			
+			;int 3
 			ret
 ANIMATION	endp
 
 
 DRAWFRAME	proc Lefthigh, Thehorisontal, Righthigh, Thevertical, Filling, Theshadowparam, Leftlow, Rightlow, Thelength, Thewidth, Theleftoffset, Theupoffset
-		pop ax
 		push bp
-		push ax
-
 		mov bp, sp
 
-		call CLEANSCREEN		
+		;call CLEANSCREEN		
 
 		mov bx, VIDEOSEC
 		mov es, bx
@@ -271,11 +482,13 @@ DRAWFRAME	proc Lefthigh, Thehorisontal, Righthigh, Thevertical, Filling, Theshad
 		push Righthigh
 		push Horisontal
 		push Lefthigh
-		call Line
+		call LINE
 		add sp, 6 * 2
 
 		mov cx, Thewidth
-STARTLOOP:	inc Theupoffset
+		;int 3
+STARTLOOP:	
+		inc Theupoffset
 
 		push cx
 
@@ -285,7 +498,7 @@ STARTLOOP:	inc Theupoffset
 		push Thevertical
 		push Filling
 		push Thevertical
-		call Line
+		call LINE
 		add sp, 6 * 2
 
 		call GONEXT
@@ -293,6 +506,7 @@ STARTLOOP:	inc Theupoffset
 		call PRINTSYMBOL
 
 		pop cx
+		;int 3
 		loop STARTLOOP
 
 
@@ -302,7 +516,7 @@ STARTLOOP:	inc Theupoffset
 		push Rightlow
 		push Horisontal
 		push Leftlow
-		call Line
+		call LINE
 		add sp, 6 * 2	
 
 		call GONEXT
@@ -318,13 +532,10 @@ STARTLOOP:	inc Theupoffset
 		push Theshadowparam
 		push Theshadowparam
 		push Theshadowparam
-		call Line
+		call LINE
 		add sp, 6 * 2	
 		
-		pop dx
-		pop bp
-		
-		push dx		
+		pop bp	
 		
 		ret	
 DRAWFRAME	endp
@@ -335,50 +546,45 @@ DRAWFRAME	endp
 ;ax, cx, dx spoiled
 LINE		proc Left, Thehorisontalsymb, Right, Thelen, Theleftoffset, Theupoffset
 		
-		pop ax
-		push bp
-		push ax
+			push bp
+			mov bp, sp
 
-		mov bp, sp
+			push Theupoffset
+			push Theleftoffset	
+			call FINDPLACE
+			add sp, 2 * 2
 
-		push Theupoffset
-		push Theleftoffset	
-		call FINDPLACE
-		mov bx, ax
-		pop ax
-		pop ax
+			mov bx, ax
 
-		mov cx, Thelen
-		
-		mov ax, Left
-		call PRINTSYMBOL
-
-		mov ax, Thehorisontalsymb
+			mov cx, Thelen
 			
-LINECYC:	call GONEXT
+			mov ax, Left
+			call PRINTSYMBOL
 
-		call PRINTSYMBOL
-		;int 3
-		loop LINECYC
+			mov ax, Thehorisontalsymb
+			
+LINECYC:	
+			call GONEXT
 
-		mov ax, Right
-		call PRINTSYMBOL
+			call PRINTSYMBOL
+			;int 3
+			loop LINECYC
 
-		pop dx
-		pop bp
-		
-		push dx
+			mov ax, Right
+			call PRINTSYMBOL
 
-		ret
+			pop bp
+
+			ret
 LINE		endp
 
 
 
 ;moves Where to the next word
 GONEXT		proc
-		add bx, WORDLEN
+			add bx, WORDLEN
 
-		ret
+			ret
 GONEXT		endp
 
 
@@ -386,9 +592,9 @@ GONEXT		endp
 
 ;moves Where to the previous word
 GOBACK		proc
-		sub bx, WORDLEN
+			sub bx, WORDLEN
 
-		ret
+			ret
 GOBACK		endp
 
 
@@ -397,34 +603,29 @@ GOBACK		endp
 ;ax, cx, dx spoiled
 ;result in ax 
 FINDPLACE	proc Theleftoffset, Theupoffset
-		pop dx
-		push bp
-		push dx
+			push bp
+			mov bp, sp
 
-		mov bp, sp
+			push bx
+			
+			mov ax, Theleftoffset
+			
+			mov cx, WORDLEN
+			mul cx
+		
+			mov bx, ax
+			
+			mov ax, Theupoffset
+			
+			mov cx, GLOBALFRAMELEN
+			mul cx
+			
+			add ax, bx
+			pop bx
+			
+			pop bp
 
-		push bx
-		
-		mov ax, Theleftoffset
-		
-		mov cx, WORDLEN
-		mul cx
-	
-		mov bx, ax
-		
-		mov ax, Theupoffset
-		
-		mov cx, GLOBALFRAMELEN
-		mul cx
-		
-		add ax, bx
-		pop bx
-		
-		pop dx
-		pop bp
-		push dx
-
-		ret
+			ret
 FINDPLACE	endp
 
 
@@ -444,11 +645,21 @@ PRINTSYMBOL	endp
 ;cleans the screen
 CLEANSCREEN	proc near
 		
+		push ax
+		push bx
+		push cx
+		push dx
+
 		mov ax, 0600h
 		mov bh, BGCOLOR
 		mov cx, LEFTHIGHCORN
 		mov dx, RIGHTDOWNCORN	
 		int 10h
+
+		pop dx
+		pop cx
+		pop bx
+		pop ax
 
 		ret
 CLEANSCREEN	endp
@@ -460,58 +671,66 @@ CLEANSCREEN	endp
 ;cx, dx are spoiled
 DELAY		proc near
 		
-		mov cx, DURATION
+			mov cx, DURATION
 OUTCYCLE:	mov dx, DURATION
 INNING:		cmp dx, 0
-		je STOP
-		dec dx
-		jmp INNING
+			je STOP
+			dec dx
+			jmp INNING
 STOP:		loop OUTCYCLE
 		
 
-		ret
+			ret
 DELAY		endp
 
 
 
 
 ;prints the whole message by addressing to videomemory
-PRINTMESSAGE	proc
-
-		mov bx, offset Message
-		mov si, bx
-		mov dx, CENTER
-		sub dx, MesLen
+PRINTMESSAGE	proc Message_offset, MesLen, place_x, place_y
+			push bp
+			mov bp, sp
 			
-		mov bx, dx
+			push place_y
+			push place_x
+			call FINDPLACE
+			add sp, 2 * 2
+			mov bx, ax
 
-THEPRINTING:	mov ah, 0dh
-		mov si, offset Message
-		mov di, 0b800h
-		mov es, di
-			
-		mov di, bx
-		cld
+			mov ah, 0dh
+			mov si, Message_offset
+			mov di, VIDEOSEC
+			mov es, di
+				
+			mov di, bx
+			cld
 
-PRINTINGCYCLE:	lodsb
-		cmp al, '$'
-		je DOBREAK
-		stosw
-		jmp PRINTINGCYCLE
+PRINTINGCYCLE:	
+			lodsb
+			cmp al, '$'
+			je DOBREAK
+			stosw
+			int 3
+			jmp PRINTINGCYCLE
 
-DOBREAK:	ret
+DOBREAK:	pop bp
+			ret
 PRINTMESSAGE	endp
 
 
 
 
 ;variables
-Counter		dw 8
-Message		db, 'The End.', '$'
-MesLen		dw $-Message
+Message_16		db, '16 sys', '$'
+MesLen_16		dw $-Message_16
 
-Leftoffset	dw 30
-Upoffset	dw 10
+Message_8		db, '8 sys', '$'
+MesLen_8		dw $-Message_8
+
+Message_2		db, '2 sys', '$'
+MesLen_2		dw $-Message_2
+
+Message_10		db, '10 sys', '$'
+MesLen_10		dw $-Message_10
 
 End		Start
-				
