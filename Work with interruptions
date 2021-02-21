@@ -1,0 +1,557 @@
+.model tiny
+.code
+.386
+
+VIDEOSEG				equ 0b800h
+GLOBALFRAMELEN			equ 160
+WORDLEN					equ 2
+
+
+left_high_corner		equ 0dc9h
+horisontal				equ 0dcdh
+right_high_corner		equ 0dbbh
+left_low_corner			equ 0dc8h
+vertical				equ 0dbah
+right_low_corner		equ 0dbch
+the_filling				equ 00bch
+the_shadow				equ 07fb1h
+
+y_frame_coordinate		equ 3
+x_frame_coordinate		equ 68
+
+frame_hor_size			equ 9
+frame_ver_size			equ 9
+
+org 100h
+Start:
+			mov ax, VIDEOSEG
+			mov es, ax
+			mov di, 2*80
+			mov ah, 4eh
+
+			
+			mov bx, 0
+			mov es, bx
+			mov bx, 9 * 4
+			mov ax, es:[bx]
+			mov old_offset, ax
+			mov ax, es:[bx + 2]
+			mov old_segment, ax
+			
+
+			cli					;we are prohibit apparate interruptions
+			mov word ptr es:[bx], offset NEW_HANDLER
+			mov ax, cs
+			mov es:[bx + 2], ax
+			sti
+
+			mov ax, 3100h
+			mov dx, 0ffffh
+			shr dx, 4
+			inc dx
+			int 21h 
+
+			mov ax, 4c00h
+			int 21h
+
+
+
+DEBUGGING_FRAME	proc
+
+				push dx cx bx ax
+
+				push y_frame_coordinate
+				push x_frame_coordinate
+				push frame_hor_size
+				push frame_ver_size
+				call DRAWFRAME
+				add sp, 4 * 2 
+
+				push 4 70 
+				push offset Message_ax
+				call PRINTMESSAGE
+				add sp, 3 * 2
+
+				pop ax
+
+				push ax 4 72 0Fh 4
+				call BIT_CONVERTER
+				add sp, 5 * 2
+
+				push 6 70 
+				push offset Message_bx
+				call PRINTMESSAGE
+				add sp, 3 * 2
+
+				pop bx
+
+				push bx 6 72 0Fh 4
+				call BIT_CONVERTER
+				add sp, 5 * 2
+
+				push 8 70 
+				push offset Message_cx
+				call PRINTMESSAGE
+				add sp, 3 * 2
+
+				pop cx
+
+				push cx 8 72 0Fh 4
+				call BIT_CONVERTER
+				add sp, 5 * 2
+
+				push 10 70 
+				push offset Message_dx
+				call PRINTMESSAGE
+				add sp, 3 * 2
+
+				pop dx
+
+				push dx 10 72 0Fh 4
+				call BIT_CONVERTER
+				add sp, 5 * 2
+
+
+				ret
+DEBUGGING_FRAME	endp
+
+
+
+;converts number in the notation in parameters
+;ax, di, cx, dx are spoiled
+BIT_CONVERTER	proc system_to_convert, convertion_mask, x_coordinate, y_coordinate, bit_number
+
+				push bp
+				mov bp, sp
+				push cx
+				
+				mov di, VIDEOSEG
+				mov es, di
+				
+				push ax
+				push cx
+				; push y_coordinate
+				; push x_coordinate
+				mov ax, x_coordinate
+				mov cx, y_coordinate
+				call FINDPLACE
+				;add sp, 2 * 2
+				mov di, ax
+
+				pop cx
+				pop ax
+
+				mov dx, bit_number
+				xor cx, cx
+
+				std
+CONTINUE_COUNTING:
+				
+				mov ax, dx
+				and ax, convertion_mask
+
+				push cx
+
+				mov cl, byte ptr system_to_convert
+				shr dx, cl
+
+				pop cx
+				inc cx
+
+				cmp dx, 0
+				ja CONTINUE_COUNTING
+
+
+				mov dx, bit_number
+				add di, cx
+				add di, cx
+CONTINUE_CONVERTING_16:
+				
+				mov ax, dx
+				and ax, convertion_mask
+
+				mov ah, 0dh
+
+				cmp al, 9
+				ja ADD_LETTER
+				add al, '0'
+				jmp GO_AWAY
+ADD_LETTER:		add al, 'A' - 10
+GO_AWAY:
+				;int 3
+				stosw
+				
+				mov cl, byte ptr system_to_convert
+				shr dx, cl
+
+				cmp dx, 0
+				ja CONTINUE_CONVERTING_16
+
+				pop cx
+				pop bp
+				
+				ret
+BIT_CONVERTER	endp
+
+
+
+DRAWFRAME	proc The_length, The_width, The_left_offset, The_up_offset
+			push bp
+			mov bp, sp
+
+			mov bx, VIDEOSEG
+			mov es, bx
+
+			push The_up_offset
+			push The_left_offset
+			push The_length
+			push right_high_corner
+			push horisontal
+			push left_high_corner
+			call LINE
+			add sp, 6 * 2
+
+			mov cx, The_width
+
+STARTLOOP:	
+			inc The_up_offset
+
+			push cx
+
+			push The_up_offset
+			push The_left_offset
+			push The_length
+			push vertical
+			push the_filling
+			push vertical
+			call LINE
+			add sp, 6 * 2
+
+			call GONEXT
+			mov ax, the_shadow
+			call PRINTSYMBOL
+
+			pop cx
+			loop STARTLOOP
+
+
+			push The_up_offset
+			push The_left_offset
+			push The_length
+			push right_low_corner
+			push horisontal
+			push left_low_corner
+			call LINE
+			add sp, 6 * 2	
+
+			call GONEXT
+			mov ax, the_shadow
+			call PRINTSYMBOL
+
+			inc The_left_offset
+			inc The_up_offset
+
+			push The_up_offset
+			push The_left_offset
+			push The_length
+			push the_shadow
+			push the_shadow
+			push the_shadow
+			call LINE
+			add sp, 6 * 2	
+			
+			pop bp	
+			
+			ret	
+DRAWFRAME	endp
+
+
+
+;prints the line of symbols we put in stack
+;ax, cx, dx spoiled
+LINE		proc Left, The_horisontal_symb, Right, The_len, The_left_offset, The_up_offset
+		
+			push bp
+			mov bp, sp
+
+			push ax
+			push cx
+
+			mov ax, The_left_offset
+			mov cx, The_up_offset	
+			call FINDPLACE
+			
+			mov bx, ax
+
+			pop cx
+			pop ax
+
+			mov cx, The_len
+			
+			mov ax, Left
+			call PRINTSYMBOL
+
+			mov ax, The_horisontal_symb
+			
+LINECYC:	
+			call GONEXT
+
+			call PRINTSYMBOL
+			loop LINECYC
+
+			mov ax, Right
+			call PRINTSYMBOL
+
+			pop bp
+
+			ret
+LINE		endp
+
+
+
+;moves Where to the next word
+GONEXT		proc
+			add bx, WORDLEN
+
+			ret
+GONEXT		endp
+
+
+
+
+;moves Where to the previous word
+GOBACK		proc
+			sub bx, WORDLEN
+
+			ret
+GOBACK		endp
+
+
+
+;sets Where to the place on the screen according to up_offset and left_offset
+;ax, cx, dx spoiled
+;result in ax 
+FINDPLACE	proc 
+			
+			push bx
+			
+			mov bx, WORDLEN
+			mul bx
+		
+			mov bx, ax
+			
+			mov ax, cx
+			
+			mov cx, GLOBALFRAMELEN
+			mul cx
+			
+			add ax, bx
+			pop bx
+			
+			ret
+FINDPLACE	endp
+
+
+
+
+;prints the symbol that was put in stack
+;ax, dx are spoiled
+PRINTSYMBOL	proc near
+		mov es:[bx], ax
+
+		ret
+PRINTSYMBOL	endp
+
+
+;printing the inning of videomemory into buffer
+;cx is spoiled
+READ_IN_BUFFER	proc 
+
+				push ds es
+
+				mov si, VIDEOSEG		;from videomemory - putting offset in ds
+				mov ds, si
+
+				mov si, y_frame_coordinate * 160 + x_frame_coordinate * 2	;from where in si
+
+				mov di, offset buffer 	;writting to buffer
+				mov es, di
+				xor di, di
+
+				mov cx, frame_ver_size + 2	;because of corners and shadow
+
+SCANNING_STRING:		
+				
+				push cx
+
+				cld
+				mov cx, frame_hor_size + 2	;because of corners and shadow
+
+				rep movsw
+
+				add si, 160 - (frame_hor_size + 2) * 2
+
+				pop cx
+				loop SCANNING_STRING
+
+				pop es ds
+
+				inc copying_counter
+
+				ret
+READ_IN_BUFFER	endp
+
+
+;printing the inning of buffer into videomemory
+;cx is spoiled
+PRINT_BUFFER	proc 
+
+				push ds es
+
+				mov di, VIDEOSEG			;now we want to read from videomemory
+				mov es, di
+
+				mov di, y_frame_coordinate * 160 + x_frame_coordinate * 2
+
+				mov si, offset buffer
+				mov ds, si
+				xor si, si 
+
+				mov cx, 11
+
+PRINTING:		
+				push cx
+
+				cld
+				mov cx, 11
+
+				rep movsw
+				
+				add di, 160 - (frame_hor_size + 2) * 2
+
+				pop cx
+				loop PRINTING
+
+				pop es ds
+
+				dec copying_counter
+
+				ret
+PRINT_BUFFER	endp
+
+
+;prints the whole message by addressing to videomemory
+;ax, bx, di, si are spoiled
+PRINTMESSAGE	proc Message_offset, place_x, place_y
+				push bp
+				mov bp, sp
+				
+				push ax
+				push cx
+				
+				mov ax, place_x 
+				mov cx, place_y
+				call FINDPLACE
+				mov bx, ax
+
+				pop cx
+				pop ax
+
+				mov ah, 0dh
+				mov si, Message_offset
+				mov di, VIDEOSEG
+				mov es, di
+					
+				mov di, bx
+				cld
+
+PRINTINGCYCLE:	
+				lodsb
+				cmp al, '$'
+				je DOBREAK
+			
+				stosw
+				
+				jmp PRINTINGCYCLE
+
+DOBREAK:	
+				pop bp
+				ret
+PRINTMESSAGE	endp
+
+
+NEW_HANDLER	proc 
+			
+			push es si di ax bx cx dx ds
+
+			in al, 60h			;reading data from controller
+
+			cmp al, 1
+			jne NEXT_KEY
+
+			mov ax, cs
+			mov ds, ax
+			;mov ss, ax
+			
+			cmp copying_counter, 0
+			jne UPDATE
+
+			call READ_IN_BUFFER
+
+
+UPDATE:			
+			call DEBUGGING_FRAME
+
+			call RETURN_LAST_INTERUPPT_FUNC
+
+			pop ds dx cx bx ax di si es
+			iret
+
+NEXT_KEY:	cmp al, 11
+			jne EOI
+
+			mov ax, cs
+			mov ds, ax
+			
+			call PRINT_BUFFER
+
+			call RETURN_LAST_INTERUPPT_FUNC
+
+			pop ds dx cx bx ax di si es
+			iret
+
+EOI:		
+
+			pop ds dx cx bx ax di si es
+
+			db 0eah
+			old_offset	dw 0
+			old_segment dw 0
+			
+			iret
+NEW_HANDLER	endp
+
+RETURN_LAST_INTERUPPT_FUNC	proc 
+
+							or al, 80h			;putting bit
+							out 61h, al			;writing bit
+							mov al, ah
+							out 61h, al			;zeroing bit
+
+							mov al, 20h			;we are telling controller that our work has ended
+							out 20h, al
+
+							ret
+RETURN_LAST_INTERUPPT_FUNC	endp
+
+Message_ax		db 'ax', '$'
+Message_bx		db 'bx', '$'
+Message_cx		db 'cx', '$'
+Message_dx		db 'dx', '$'
+
+copying_counter	db 	0
+buffer			dw 	9*9	dup(0)
+
+program_end:
+
+End		Start
