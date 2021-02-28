@@ -2,19 +2,18 @@
 .code
 .386
 
-VIDEOSEG				equ 0b800h
+VIDEOSEG			equ 0b800h
 GLOBALFRAMELEN			equ 160
-WORDLEN					equ 2
-
+WORDLEN				equ 2
 
 left_high_corner		equ 0dc9h
-horisontal				equ 0dcdh
+horisontal			equ 0dcdh
 right_high_corner		equ 0dbbh
 left_low_corner			equ 0dc8h
-vertical				equ 0dbah
+vertical			equ 0dbah
 right_low_corner		equ 0dbch
-the_filling				equ 00bch
-the_shadow				equ 07fb1h
+the_filling			equ 00bch
+the_shadow			equ 07fb1h
 
 y_frame_coordinate		equ 3
 x_frame_coordinate		equ 68
@@ -24,92 +23,126 @@ frame_ver_size			equ 9
 
 org 100h
 Start:
-			mov ax, VIDEOSEG
-			mov es, ax
-			mov di, 2*80
-			mov ah, 4eh
+				push 9 
+				push offset NEW_HANDLER 
+				push offset old_int_handler
+				call CALL_INTERRUPTIONS
+				add sp, 3 * 2
 
-			
-			mov bx, 0
-			mov es, bx
-			mov bx, 9 * 4
-			mov ax, es:[bx]
-			mov old_offset, ax
-			mov ax, es:[bx + 2]
-			mov old_segment, ax
-			
-
-			cli					;we are prohibit apparate interruptions
-			mov word ptr es:[bx], offset NEW_HANDLER
-			mov ax, cs
-			mov es:[bx + 2], ax
-			sti
-
-			mov ax, 3100h
-			mov dx, 0ffffh
-			shr dx, 4
-			inc dx
-			int 21h 
-
-			mov ax, 4c00h
-			int 21h
+				mov ax, 4c00h
+				int 21h
 
 
+;-------------------------------------------------|
+;changes old interruption function into new  	  |
+;						  |
+;ax, bx, dx, si es are spoiled 			  |
+;-------------------------------------------------|
+CALL_INTERRUPTIONS	proc old_handler, new_int_handler, int_number
 
+				push bp
+				mov bp, sp
+
+				mov si, old_handler
+
+				mov bx, 0
+				mov es, bx
+				mov bx, int_number
+				shl bx, 2
+
+				mov ax, es:[bx]
+				mov ds:[si], ax
+				mov ax, es:[bx + 2]
+				mov ds:[si + 2], ax
+
+				cli											;we are prohibit apparate interruptions
+				mov dx, new_int_handler
+				mov word ptr es:[bx], dx
+				mov ax, cs
+				mov es:[bx + 2], ax
+				sti
+
+				mov ax, 3100h
+				mov dx, 0ffffh
+				shr dx, 4									;the amount of pages we need for this resident
+				inc dx
+				int 21h 
+
+				pop bp
+
+				ret
+CALL_INTERRUPTIONS	endp
+
+;-------------------------------------------------|
+;draws frame and outputs the inning of registers  |
+;-------------------------------------------------|
 DEBUGGING_FRAME	proc
 
 				push dx cx bx ax
 
-				push y_frame_coordinate
-				push x_frame_coordinate
-				push frame_hor_size
-				push frame_ver_size
+				push y_frame_coordinate x_frame_coordinate frame_hor_size frame_ver_size
 				call DRAWFRAME
 				add sp, 4 * 2 
 
-				push 4 70 
+										;first string + first column
+				mov ax, 70
+				mov cx, 4
 				push offset Message_ax
 				call PRINTMESSAGE
-				add sp, 3 * 2
+				add sp, 1 * 2
 
 				pop ax
 
-				push ax 4 72 0Fh 4
+				push ax 0Fh 4			;first string + second column
+				mov ax, 72
+				mov cx, 4
 				call BIT_CONVERTER
-				add sp, 5 * 2
+				add sp, 3 * 2
 
-				push 6 70 
+										;second string + first column
+				mov ax, 70
+				mov cx, 6
 				push offset Message_bx
 				call PRINTMESSAGE
-				add sp, 3 * 2
+				add sp, 1 * 2
 
 				pop bx
 
-				push bx 6 72 0Fh 4
+				push bx 0Fh 4			;second string + second column
+				mov ax, 72
+				mov cx, 6
 				call BIT_CONVERTER
-				add sp, 5 * 2
+				add sp, 3 * 2
 
-				push 8 70 
+										;third string + first column
+				mov ax, 70
+				mov cx, 8
 				push offset Message_cx
 				call PRINTMESSAGE
-				add sp, 3 * 2
+				add sp, 1 * 2
 
 				pop cx
 
-				push cx 8 72 0Fh 4
+				push cx 0Fh 4			;third string + second column
+				mov ax, 72
+				mov cx, 8
 				call BIT_CONVERTER
-				add sp, 5 * 2
+				add sp, 3 * 2
 
-				push 10 70 
+										;forth string + first column
+				mov ax, 70
+				mov cx, 10
 				push offset Message_dx
 				call PRINTMESSAGE
-				add sp, 3 * 2
+				add sp, 1 * 2
 
 				pop dx
 
-				push dx 10 72 0Fh 4
+				push dx 0Fh 4			;forth string + second column
+				mov ax, 72
+				mov cx, 10
 				call BIT_CONVERTER
-				add sp, 5 * 2
+				add sp, 3 * 2
 
 
 				ret
@@ -117,9 +150,14 @@ DEBUGGING_FRAME	endp
 
 
 
-;converts number in the notation in parameters
-;ax, di, cx, dx are spoiled
-BIT_CONVERTER	proc system_to_convert, convertion_mask, x_coordinate, y_coordinate, bit_number
+;-----------------------------------------------------|
+;converts number in the notation in parameters	      |
+;						      |
+;x coordinate in ax, y coordinate in cx   	      |
+;						      |
+;ax, di, cx, dx are spoiled			      |
+;-----------------------------------------------------|
+BIT_CONVERTER	proc system_to_convert, convertion_mask, bit_number
 
 				push bp
 				mov bp, sp
@@ -128,18 +166,9 @@ BIT_CONVERTER	proc system_to_convert, convertion_mask, x_coordinate, y_coordinat
 				mov di, VIDEOSEG
 				mov es, di
 				
-				push ax
-				push cx
-				; push y_coordinate
-				; push x_coordinate
-				mov ax, x_coordinate
-				mov cx, y_coordinate
 				call FINDPLACE
-				;add sp, 2 * 2
+				
 				mov di, ax
-
-				pop cx
-				pop ax
 
 				mov dx, bit_number
 				xor cx, cx
@@ -178,7 +207,6 @@ CONTINUE_CONVERTING_16:
 				jmp GO_AWAY
 ADD_LETTER:		add al, 'A' - 10
 GO_AWAY:
-				;int 3
 				stosw
 				
 				mov cl, byte ptr system_to_convert
@@ -194,198 +222,203 @@ GO_AWAY:
 BIT_CONVERTER	endp
 
 
-
+;--------------------------------|
+;draws animated frame 		 |
+;				 |
+;es, cx, ax are spoiled		 |
+;--------------------------------|
 DRAWFRAME	proc The_length, The_width, The_left_offset, The_up_offset
-			push bp
-			mov bp, sp
+				push bp
+				mov bp, sp
 
-			mov bx, VIDEOSEG
-			mov es, bx
+				mov bx, VIDEOSEG
+				mov es, bx
 
-			push The_up_offset
-			push The_left_offset
-			push The_length
-			push right_high_corner
-			push horisontal
-			push left_high_corner
-			call LINE
-			add sp, 6 * 2
+				push The_up_offset The_left_offset The_length right_high_corner horisontal left_high_corner
+				call LINE
+				add sp, 6 * 2
 
-			mov cx, The_width
+				mov cx, The_width
 
 STARTLOOP:	
-			inc The_up_offset
+				inc The_up_offset
 
-			push cx
+				push cx
 
-			push The_up_offset
-			push The_left_offset
-			push The_length
-			push vertical
-			push the_filling
-			push vertical
-			call LINE
-			add sp, 6 * 2
+				push The_up_offset The_left_offset The_length vertical the_filling vertical
+				call LINE
+				add sp, 6 * 2
 
-			call GONEXT
-			mov ax, the_shadow
-			call PRINTSYMBOL
+				call GONEXT
+				mov ax, the_shadow
+				call PRINTSYMBOL
 
-			pop cx
-			loop STARTLOOP
+				pop cx
+				loop STARTLOOP
 
 
-			push The_up_offset
-			push The_left_offset
-			push The_length
-			push right_low_corner
-			push horisontal
-			push left_low_corner
-			call LINE
-			add sp, 6 * 2	
+				push The_up_offset The_left_offset The_length right_low_corner horisontal left_low_corner
+				call LINE
+				add sp, 6 * 2	
 
-			call GONEXT
-			mov ax, the_shadow
-			call PRINTSYMBOL
+				call GONEXT
+				mov ax, the_shadow
+				call PRINTSYMBOL
 
-			inc The_left_offset
-			inc The_up_offset
+				inc The_left_offset
+				inc The_up_offset
 
-			push The_up_offset
-			push The_left_offset
-			push The_length
-			push the_shadow
-			push the_shadow
-			push the_shadow
-			call LINE
-			add sp, 6 * 2	
-			
-			pop bp	
-			
-			ret	
+				push The_up_offset The_left_offset The_length the_shadow the_shadow the_shadow
+				call LINE
+				add sp, 6 * 2	
+				
+				pop bp	
+				
+				ret	
 DRAWFRAME	endp
 
 
 
-;prints the line of symbols we put in stack
-;ax, cx, dx spoiled
+;---------------------------------------------|
+;prints the line of symbols we put in stack   |
+;					      |
+;ax, cx, dx spoiled			      |
+;---------------------------------------------|
 LINE		proc Left, The_horisontal_symb, Right, The_len, The_left_offset, The_up_offset
 		
-			push bp
-			mov bp, sp
+				push bp
+				mov bp, sp
 
-			push ax
-			push cx
+				push ax
+				push cx
 
-			mov ax, The_left_offset
-			mov cx, The_up_offset	
-			call FINDPLACE
-			
-			mov bx, ax
+				mov ax, The_left_offset
+				mov cx, The_up_offset	
+				call FINDPLACE
+				
+				mov bx, ax
 
-			pop cx
-			pop ax
+				pop cx
+				pop ax
 
-			mov cx, The_len
-			
-			mov ax, Left
-			call PRINTSYMBOL
+				mov cx, The_len
+				
+				mov ax, Left
+				call PRINTSYMBOL
 
-			mov ax, The_horisontal_symb
+				mov ax, The_horisontal_symb
 			
 LINECYC:	
-			call GONEXT
+				call GONEXT
 
-			call PRINTSYMBOL
-			loop LINECYC
+				call PRINTSYMBOL
+				loop LINECYC
 
-			mov ax, Right
-			call PRINTSYMBOL
+				mov ax, Right
+				call PRINTSYMBOL
 
-			pop bp
+				pop bp
 
-			ret
+				ret
 LINE		endp
 
 
 
-;moves Where to the next word
+;-------------------------------|
+;moves Where to the next word   |
+;				|
+;bx is spoiled			|
+;-------------------------------|
 GONEXT		proc
-			add bx, WORDLEN
+				add bx, WORDLEN
 
-			ret
+				ret
 GONEXT		endp
 
 
 
 
-;moves Where to the previous word
+;--------------------------------------|
+;moves Where to the previous word      |
+;				       |
+;bx is spoiled			       |
+;--------------------------------------|
 GOBACK		proc
-			sub bx, WORDLEN
+				sub bx, WORDLEN
 
-			ret
+				ret
 GOBACK		endp
 
 
 
-;sets Where to the place on the screen according to up_offset and left_offset
-;ax, cx, dx spoiled
-;result in ax 
+;-------------------------------------------------------------------------------|
+;sets Where to the place on the screen according to up_offset and left_offset   |
+;										|
+;ax, cx, dx spoiled								|
+;										|
+;@result in ax 									|
+;-------------------------------------------------------------------------------|
 FINDPLACE	proc 
 			
-			push bx
+				push bx
+				
+				mov bx, WORDLEN
+				mul bx
 			
-			mov bx, WORDLEN
-			mul bx
-		
-			mov bx, ax
-			
-			mov ax, cx
-			
-			mov cx, GLOBALFRAMELEN
-			mul cx
-			
-			add ax, bx
-			pop bx
-			
-			ret
+				mov bx, ax
+				
+				mov ax, cx
+				
+				mov cx, GLOBALFRAMELEN
+				mul cx
+				
+				add ax, bx
+				pop bx
+				
+				ret
 FINDPLACE	endp
 
 
 
 
-;prints the symbol that was put in stack
-;ax, dx are spoiled
+;-----------------------------------------|
+;prints the symbol that was put in stack  |
+;					  |
+;ax, dx are spoiled			  |
+;-----------------------------------------|
 PRINTSYMBOL	proc near
-		mov es:[bx], ax
+				mov es:[bx], ax
 
-		ret
+				ret
 PRINTSYMBOL	endp
 
 
-;printing the inning of videomemory into buffer
-;cx is spoiled
+;-------------------------------------------------|
+;printing the inning of videomemory into buffer   |
+;						  |
+;cx is spoiled					  |
+;-------------------------------------------------|
 READ_IN_BUFFER	proc 
 
 				push ds es
 
-				mov si, VIDEOSEG		;from videomemory - putting offset in ds
+				mov si, VIDEOSEG											;from videomemory - putting offset in ds
 				mov ds, si
 
 				mov si, y_frame_coordinate * 160 + x_frame_coordinate * 2	;from where in si
 
-				mov di, offset buffer 	;writting to buffer
+				mov di, offset buffer 										;writting to buffer
 				mov es, di
 				xor di, di
 
-				mov cx, frame_ver_size + 2	;because of corners and shadow
+				mov cx, frame_ver_size + 2									;because of corners and shadow
 
 SCANNING_STRING:		
 				
 				push cx
 
 				cld
-				mov cx, frame_hor_size + 2	;because of corners and shadow
+				mov cx, frame_hor_size + 2									;because of corners and shadow
 
 				rep movsw
 
@@ -402,13 +435,16 @@ SCANNING_STRING:
 READ_IN_BUFFER	endp
 
 
-;printing the inning of buffer into videomemory
-;cx is spoiled
+;--------------------------------------------------|
+;printing the inning of buffer into videomemory    |
+;						   |
+;cx is spoiled					   |
+;--------------------------------------------------|
 PRINT_BUFFER	proc 
 
 				push ds es
 
-				mov di, VIDEOSEG			;now we want to read from videomemory
+				mov di, VIDEOSEG											;now we want to read from videomemory
 				mov es, di
 
 				mov di, y_frame_coordinate * 160 + x_frame_coordinate * 2
@@ -417,13 +453,13 @@ PRINT_BUFFER	proc
 				mov ds, si
 				xor si, si 
 
-				mov cx, 11
+				mov cx, frame_ver_size + 2
 
 PRINTING:		
 				push cx
 
 				cld
-				mov cx, 11
+				mov cx, frame_hor_size + 2
 
 				rep movsw
 				
@@ -440,117 +476,132 @@ PRINTING:
 PRINT_BUFFER	endp
 
 
-;prints the whole message by addressing to videomemory
-;ax, bx, di, si are spoiled
-PRINTMESSAGE	proc Message_offset, place_x, place_y
-				push bp
-				mov bp, sp
-				
-				push ax
-				push cx
-				
-				mov ax, place_x 
-				mov cx, place_y
-				call FINDPLACE
-				mov bx, ax
+;--------------------------------------------------------|
+;prints the whole message by addressing to videomemory   |
+;							 |
+;x coordinate in ax, y coordinate in cx			 |
+;							 |
+;ax, bx, di, si are spoiled				 |
+;--------------------------------------------------------|
+PRINTMESSAGE	proc Message_offset, MesLen
+			push bp
+			mov bp, sp
+			
+			call FINDPLACE
+			mov bx, ax
 
-				pop cx
-				pop ax
-
-				mov ah, 0dh
-				mov si, Message_offset
-				mov di, VIDEOSEG
-				mov es, di
-					
-				mov di, bx
-				cld
+			mov ah, 0dh
+			mov si, Message_offset
+			mov di, VIDEOSEG
+			mov es, di
+				
+			mov di, bx
+			cld
 
 PRINTINGCYCLE:	
-				lodsb
-				cmp al, '$'
-				je DOBREAK
-			
-				stosw
-				
-				jmp PRINTINGCYCLE
+			int 3
+			lodsb
+			cmp al, '$'
+			je DOBREAK
+			int 3
+			stosw
 
-DOBREAK:	
-				pop bp
-				ret
+			jmp PRINTINGCYCLE
+
+DOBREAK:	pop bp
+			ret
 PRINTMESSAGE	endp
 
 
+;----------------------------------------------------------|
+;interrupts the interruption: hot keys are 'Esc' and '0'   |
+;							   |
+;saves registers into stack 				   |
+;----------------------------------------------------------|
 NEW_HANDLER	proc 
 			
-			push es si di ax bx cx dx ds
+				push es si di ax bx cx dx ds
 
-			in al, 60h			;reading data from controller
+				in al, 60h			;reading data from keyboard controller
 
-			cmp al, 1
-			jne NEXT_KEY
+				cmp al, 1
+				jne NEXT_KEY
 
-			mov ax, cs
-			mov ds, ax
-			;mov ss, ax
-			
-			cmp copying_counter, 0
-			jne UPDATE
+				push ax
 
-			call READ_IN_BUFFER
+				mov ax, cs
+				mov ds, ax
 
+				pop ax
+				
+				cmp copying_counter, 0
+				jne UPDATE
+
+				call READ_IN_BUFFER
 
 UPDATE:			
-			call DEBUGGING_FRAME
+				call DEBUGGING_FRAME
 
-			call RETURN_LAST_INTERUPPT_FUNC
+				call RETURN_LAST_INTERUPPT_FUNC
 
-			pop ds dx cx bx ax di si es
-			iret
+				pop ds dx cx bx ax di si es
+				iret
 
-NEXT_KEY:	cmp al, 11
-			jne EOI
+NEXT_KEY:	
+				cmp al, 11
+				jne EOI
 
-			mov ax, cs
-			mov ds, ax
-			
-			call PRINT_BUFFER
+				mov ax, cs
+				mov ds, ax
+				
+				call PRINT_BUFFER
 
-			call RETURN_LAST_INTERUPPT_FUNC
+				call RETURN_LAST_INTERUPPT_FUNC
 
-			pop ds dx cx bx ax di si es
-			iret
+				pop ds dx cx bx ax di si es
+				iret
 
 EOI:		
 
-			pop ds dx cx bx ax di si es
+				pop ds dx cx bx ax di si es
 
-			db 0eah
-			old_offset	dw 0
-			old_segment dw 0
-			
-			iret
+				db 0eah
+				; old_offset	dw 0
+				; old_segment dw 0
+
+				old_int_handler dw 2 dup(0)
+							
+				iret
 NEW_HANDLER	endp
 
+
+;------------------------------|
+;fixes the interruptions       |
+;			       |
+;ax is spoiled		       |
+;------------------------------|
 RETURN_LAST_INTERUPPT_FUNC	proc 
 
-							or al, 80h			;putting bit
-							out 61h, al			;writing bit
-							mov al, ah
-							out 61h, al			;zeroing bit
+				or al, 80h			;putting bit
+				out 61h, al			;writing bit
+				mov al, ah
+				out 61h, al			;zeroing bit
 
-							mov al, 20h			;we are telling controller that our work has ended
-							out 20h, al
+				mov al, 20h			;we are telling controller that our work has ended
+				out 20h, al
 
-							ret
+				ret
 RETURN_LAST_INTERUPPT_FUNC	endp
 
+
+;variables
 Message_ax		db 'ax', '$'
 Message_bx		db 'bx', '$'
 Message_cx		db 'cx', '$'
 Message_dx		db 'dx', '$'
 
 copying_counter	db 	0
-buffer			dw 	9*9	dup(0)
+buffer			dw  (frame_hor_size + 2)*(frame_ver_size + 2)	dup(0)
 
 program_end:
 
