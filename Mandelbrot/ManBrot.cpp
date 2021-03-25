@@ -80,7 +80,6 @@ void screen_delete(s_information *screen)
 	free(screen);
 }
 
-
 void draw_mandelbrot()
 {
 	txCreateWindow (horizontal_size, vertical_size);
@@ -108,12 +107,16 @@ void draw_mandelbrot()
         if (txGetAsyncKeyState (VK_LEFT))  mandelbrot_screen->center_x    -= mandelbrot_screen->dx * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
         if (txGetAsyncKeyState (VK_DOWN))  mandelbrot_screen->center_y    -= mandelbrot_screen->dy * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
         if (txGetAsyncKeyState (VK_UP))    mandelbrot_screen->center_y    += mandelbrot_screen->dy * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        if (txGetAsyncKeyState ('A'))      {mandelbrot_screen->real_horizontal_size /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        									mandelbrot_screen->real_vertical_size   /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        								}
-        if (txGetAsyncKeyState ('Z'))      {mandelbrot_screen->real_horizontal_size *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        									mandelbrot_screen->real_vertical_size   *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        								}
+        if (txGetAsyncKeyState ('A'))      
+        {	
+        	mandelbrot_screen->real_horizontal_size /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+        	mandelbrot_screen->real_vertical_size   /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+        }
+        if (txGetAsyncKeyState ('Z'))      
+        {
+        	mandelbrot_screen->real_horizontal_size *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+        	mandelbrot_screen->real_vertical_size   *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+        }
 
         float center_x = mandelbrot_screen->center_x;
 		float center_y = mandelbrot_screen->center_y;
@@ -121,7 +124,7 @@ void draw_mandelbrot()
 		float left_corner_x = mandelbrot_screen->center_x - mandelbrot_screen->real_horizontal_size/2;
 		float left_corner_y = mandelbrot_screen->center_y - mandelbrot_screen->real_vertical_size/2;
 
-        mandelbrot_screen->dx = (mandelbrot_screen->real_horizontal_size/mandelbrot_screen->horizontal_screen_size);
+        	mandelbrot_screen->dx = (mandelbrot_screen->real_horizontal_size/mandelbrot_screen->horizontal_screen_size);
 		mandelbrot_screen->dy = (mandelbrot_screen->real_vertical_size/mandelbrot_screen->vertical_screen_size);
 
 		for (int i = 0; i < height; i++)
@@ -185,7 +188,7 @@ void draw_mandelbrot()
 			}
 		}
 		printf ("\t\r%.0lf", txGetFPS());
-        txSleep();
+       		txSleep();
 	}
 
 	screen_delete(mandelbrot_screen);
