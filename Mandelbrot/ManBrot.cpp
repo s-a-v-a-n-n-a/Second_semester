@@ -30,6 +30,18 @@ typedef struct screen_information
 s_information *screen_new();
 void screen_set_pixel_color(s_information *screen, long long pixel, char red, char green, char blue, char alpha);
 void screen_delete(s_information *screen);
+void screen_update_information(s_information *screen);
+
+void four_float_set_one_value (float *array_to, float value);
+void four_int_set_one_value (int *array_to, int value);
+void four_float_multiply (float *array_to, float *array_1, float *array_2);
+void four_float_add (float *array_to, float *array_1, float *array_2);
+void four_float_add_with_int (int *array_to, int *array_1, float *array_2);
+void four_float_sub (float *array_to, float *array_1, float *array_2);
+void four_float_copy (float *array_to, float *array_with);
+
+void four_float_compare(float *array_to, float *array_with, float *result);
+int four_flat_make_mask(float *float_mask);
 
 void draw_mandelbrot();
 
@@ -80,6 +92,89 @@ void screen_delete(s_information *screen)
 	free(screen);
 }
 
+void screen_update_information(s_information *screen)
+{
+	if (txGetAsyncKeyState (VK_RIGHT)) screen->center_x += screen->dx * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    if (txGetAsyncKeyState (VK_LEFT))  screen->center_x -= screen->dx * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    if (txGetAsyncKeyState (VK_DOWN))  screen->center_y -= screen->dy * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    if (txGetAsyncKeyState (VK_UP))    screen->center_y += screen->dy * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    if (txGetAsyncKeyState ('A'))
+    {
+    	screen->real_horizontal_size /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    	screen->real_vertical_size   /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    }
+    if (txGetAsyncKeyState ('Z'))
+    {
+    	screen->real_horizontal_size *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    	screen->real_vertical_size   *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
+    }
+
+    screen->dx = (screen->real_horizontal_size/screen->horizontal_screen_size);
+	screen->dy = (screen->real_vertical_size/screen->vertical_screen_size);
+}
+
+
+void four_float_set_one_value (float *array_to, float value)
+{
+	for (int k = 0; k < 4; k++)
+		array_to[k] = value;
+}
+
+void four_int_set_one_value (int *array_to, int value)
+{
+	for (int k = 0; k < 4; k++)
+		array_to[k] = value;
+}
+
+void four_float_multiply (float *array_to, float *array_1, float *array_2)
+{
+	for (int k = 0; k < 4; k++)
+		array_to[k] = array_1[k] * array_2[k];
+}
+
+void four_float_add (float *array_to, float *array_1, float *array_2)
+{
+	for (int k = 0; k < 4; k++)
+		array_to[k] = array_1[k] + array_2[k];
+}
+
+void four_float_add_with_int (int *array_to, int *array_1, float *array_2)
+{
+	for (int k = 0; k < 4; k++)
+		array_to[k] = array_1[k] + (int)array_2[k];
+}
+
+void four_float_sub (float *array_to, float *array_1, float *array_2)
+{
+	for (int k = 0; k < 4; k++)
+		array_to[k] = array_1[k] - array_2[k];
+}
+
+void four_float_copy (float *array_to, float *array_with)
+{
+	for (int k = 0; k < 4; k++)
+		array_to[k] = array_with[k];
+}
+
+void four_float_compare(float *array_to, float *array_with, float *result)
+{
+	for (int k = 0; k < 4; k++)
+		if (array_to[k] <= array_with[k])
+			result[k] = 1;
+		else
+			result[k] = 0;
+}
+
+int four_flat_make_mask(float *float_mask)
+{
+	int mask = 0;
+	for (int k = 0; k < 4; k++)
+	{
+		mask = mask * 2 + float_mask[k];
+	}
+	return mask;
+}
+
 void draw_mandelbrot()
 {
 	txCreateWindow (horizontal_size, vertical_size);
@@ -91,95 +186,73 @@ void draw_mandelbrot()
 	long long height = mandelbrot_screen->vertical_screen_size;
 	long long width = mandelbrot_screen->horizontal_screen_size;
 
-	float center_x = mandelbrot_screen->center_x;
-	float center_y = mandelbrot_screen->center_y;
-
-	float left_corner_x = mandelbrot_screen->center_x - mandelbrot_screen->real_horizontal_size/2;
-	float left_corner_y = mandelbrot_screen->center_y - mandelbrot_screen->real_vertical_size/2;
-
-	float square_radius = radius * radius;
+	float square_radius[4] = {}; four_float_set_one_value(square_radius, radius * radius);
 
 	while(true)
 	{
-		if (GetAsyncKeyState (VK_ESCAPE)) break;
+		if (GetAsyncKeyState (VK_ESCAPE)) 
+			break;
 
-		if (txGetAsyncKeyState (VK_RIGHT)) mandelbrot_screen->center_x    += mandelbrot_screen->dx * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        if (txGetAsyncKeyState (VK_LEFT))  mandelbrot_screen->center_x    -= mandelbrot_screen->dx * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        if (txGetAsyncKeyState (VK_DOWN))  mandelbrot_screen->center_y    -= mandelbrot_screen->dy * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        if (txGetAsyncKeyState (VK_UP))    mandelbrot_screen->center_y    += mandelbrot_screen->dy * (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        if (txGetAsyncKeyState ('A'))      
-        {	
-        	mandelbrot_screen->real_horizontal_size /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        	mandelbrot_screen->real_vertical_size   /= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        }
-        if (txGetAsyncKeyState ('Z'))      
-        {
-        	mandelbrot_screen->real_horizontal_size *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        	mandelbrot_screen->real_vertical_size   *= (txGetAsyncKeyState (VK_SHIFT)? 100.f : 10.f);
-        }
+		screen_update_information(mandelbrot_screen);
 
-        float center_x = mandelbrot_screen->center_x;
+		float center_x = mandelbrot_screen->center_x;
 		float center_y = mandelbrot_screen->center_y;
 
 		float left_corner_x = mandelbrot_screen->center_x - mandelbrot_screen->real_horizontal_size/2;
 		float left_corner_y = mandelbrot_screen->center_y - mandelbrot_screen->real_vertical_size/2;
 
-        	mandelbrot_screen->dx = (mandelbrot_screen->real_horizontal_size/mandelbrot_screen->horizontal_screen_size);
-		mandelbrot_screen->dy = (mandelbrot_screen->real_vertical_size/mandelbrot_screen->vertical_screen_size);
-
 		for (int i = 0; i < height; i++)
 		{
-			if (GetAsyncKeyState (VK_ESCAPE)) break;
+			if (GetAsyncKeyState (VK_ESCAPE)) 
+				break;
 
 			long long current_line = i * width;
 			for (int j = 0; j + 3 < width; j += 4)
 			{
-				float points_x_0[4] = {left_corner_x + j * mandelbrot_screen->dx,
-										left_corner_x + (j + 1) * mandelbrot_screen->dx,
-										left_corner_x + (j + 2) * mandelbrot_screen->dx,
-										left_corner_x + (j + 3) * mandelbrot_screen->dx};
+				float points_x_0[4]         = {}; four_float_set_one_value(points_x_0, mandelbrot_screen->dx);
+				float j_value[4]            = {}; four_float_set_one_value(j_value, j);
+				float zero_one_two_three[4] = {0, 1, 2, 3};
+				float left_corners_x[4]     = {}; four_float_set_one_value(left_corners_x, left_corner_x);
+				
+				four_float_add          (j_value, j_value, zero_one_two_three);
+				four_float_multiply     (points_x_0, points_x_0, j_value);
+				four_float_add          (points_x_0, points_x_0, left_corners_x);
 
-				float points_y_0[4] = {left_corner_y + i * mandelbrot_screen->dy,
-										left_corner_y + i * mandelbrot_screen->dy,
-										left_corner_y + i * mandelbrot_screen->dy,
-										left_corner_y + i * mandelbrot_screen->dy};
+				float points_y_0[4] = {}; four_float_set_one_value(points_y_0, left_corner_y + i * mandelbrot_screen->dy);
 
-				float points_x[4] = {points_x_0[0], points_x_0[1], points_x_0[2], points_x_0[3]};
-				float points_y[4] = {points_y_0[0], points_y_0[1], points_y_0[2], points_y_0[3]};
+				float points_x[4] = {}; four_float_copy(points_x, points_x_0);
+	 			float points_y[4] = {}; four_float_copy(points_y, points_y_0);
 
-				unsigned char place[4] = {1, 1, 1, 1};
-				unsigned char mask_of_place = 0xf;
-
-				int counter[4] = {0, 0, 0, 0};
+				float place[4] = {}; four_float_set_one_value(place, 1);
+				int counter[4] = {}; four_int_set_one_value(counter, 0);
 				int common_counter = 0;
 
-				while (mask_of_place && common_counter < maximum_iterations_amount)
+				while (common_counter < maximum_iterations_amount)
 				{
-					float square_points_x[4] = {};
-					for (int k = 0; k < 4; k++) square_points_x[k] = points_x[k] * points_x[k];
-				 	float square_points_y[4] = {};
-				 	for (int k = 0; k < 4; k++) square_points_y[k] = points_y[k] * points_y[k];
+					float square_points_x[4] = {}; four_float_multiply (square_points_x, points_x, points_x);
+					float square_points_y[4] = {}; four_float_multiply (square_points_y, points_y, points_y);
 
-					float tmp_points_x[4] = {};
-					for (int k = 0; k < 4; k++) tmp_points_x[k] = square_points_x[k] - square_points_y[k] + points_x_0[k];
-					float tmp_points_y[4] = {};
-					for (int k = 0; k < 4; k++) tmp_points_y[k] = 2 * points_x[k] * points_y[k] + points_y_0[k];
+					float tmp_points_x[4] = {}; 
+					four_float_sub (tmp_points_x, square_points_x, square_points_y); 
+					four_float_add (tmp_points_x, tmp_points_x, points_x_0);
 
-					float distances_from_center[4] = {};
-					for (int k = 0; k < 4; k++) distances_from_center[k] = tmp_points_x[k] * tmp_points_x[k] + tmp_points_y[k] * tmp_points_y[k];
+					float tmp_points_y[4]    = {}; four_float_multiply (tmp_points_y, points_x, points_y);
+					four_float_add (tmp_points_y, tmp_points_y, tmp_points_y); four_float_add (tmp_points_y, tmp_points_y, points_y_0);
 
-					for (int k = 0; k < 4; k++)
-					{
-						if (distances_from_center[k] > square_radius)
-							place[k] = 0;
-						if(place[k])
-							counter[k]++;
+					float tmp_points_square_x[4] = {}; four_float_multiply (tmp_points_square_x, tmp_points_x, tmp_points_x);
 
-						points_x[k] = tmp_points_x[k];
-						points_y[k] = tmp_points_y[k];
-					}
+					float tmp_points_square_y[4] = {}; four_float_multiply (tmp_points_square_y, tmp_points_y, tmp_points_y);
 
-					mask_of_place = (((place[3] * 2) + place[2]) * 2 + place[1]) * 2 + place[0];
+					float distances_from_center[4] = {}; four_float_add (distances_from_center, tmp_points_square_x, tmp_points_square_y);
+
+					four_float_compare  (distances_from_center, square_radius, place);
+					int mask = four_flat_make_mask(place);
+					if (!mask)
+						break;
+
+					four_float_add_with_int(counter, counter, place);
+					four_float_copy (points_x, tmp_points_x); four_float_copy (points_y, tmp_points_y);
+
 					common_counter++;
 				}
 
@@ -188,7 +261,7 @@ void draw_mandelbrot()
 			}
 		}
 		printf ("\t\r%.0lf", txGetFPS());
-       		txSleep();
+       	txSleep();
 	}
 
 	screen_delete(mandelbrot_screen);
