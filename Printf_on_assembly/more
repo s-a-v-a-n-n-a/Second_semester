@@ -1,0 +1,441 @@
+     1                                  section 		.text
+     2                                  
+     3                                  ;global _start
+     4                                  global ANNA_S_PRINTF
+     5                                  extern NUMBER_SUM																;predefined entry point name for ld
+     6                                  
+     7                                  _start:		
+     8 00000000 BF02000000              				mov rdi, 2
+     9 00000005 BE03000000              				mov rsi, 3
+    10 0000000A E8(00000000)            				call NUMBER_SUM
+    11                                  
+    12 0000000F 48BF-                   				mov rdi, format_string
+    12 00000011 [0000000000000000] 
+    13 00000019 4889C6                  				mov rsi, rax
+    14 0000001C E80A000000              				call ANNA_S_PRINTF
+    15                                  				; push 33
+    16                                  				; push 3802
+    17                                  				; push format_string
+    18                                  				; call PRINTF
+    19                                  				; add rsp, 3 * 8
+    20                                  
+    21 00000021 B83C000000              				mov rax, 0x3C ;exit64
+    22 00000026 4831FF                  				xor rdi, rdi
+    23 00000029 0F05                    				syscall
+    24                                  
+    25                                  
+    26                                  ANNA_S_PRINTF:
+    27 0000002B 415B                    				pop r11
+    28                                  				
+    29 0000002D 4151                    				push r9
+    30 0000002F 4150                    				push r8
+    31 00000031 51                      				push rcx
+    32 00000032 52                      				push rdx
+    33 00000033 56                      				push rsi
+    34 00000034 57                      				push rdi
+    35 00000035 E807000000              				call PRINTF
+    36 0000003A 4883C430                				add rsp, 6 * 8
+    37                                  
+    38 0000003E 4153                    				push r11
+    39 00000040 C3                      				ret
+    40                                  
+    41                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+    42                                  ;prints the string according to the string inning and parameters in stack												      	|
+    43                                  ;																																|
+    44                                  ;parameters in order from further: parameters to output (unknown amount), format string 								 		|		 		 																					|	
+    45                                  ;						      						  																			|
+    46                                  ;rax, rdi, rcx, rdx, r9, rsi, r10 are spoiled			     																	|
+    47                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+    48                                  PRINTF:
+    49 00000041 55                      				push rbp
+    50 00000042 4889E5                  				mov rbp, rsp
+    51                                  
+    52 00000045 4153                    				push r11
+    53                                  
+    54 00000047 53                      				push rbx
+    55 00000048 4154                    				push r12
+    56 0000004A 4155                    				push r13
+    57 0000004C 4156                    				push r14
+    58 0000004E 4157                    				push r15
+    59                                  
+    60 00000050 41BA02000000            				mov r10, 2 ;parameters counter
+    61                                  
+    62 00000056 48BF-                   				mov rdi, buffer
+    62 00000058 [0000000000000000] 
+    63 00000060 488B7510                				mov rsi, [rbp + 16]
+    64                                  
+    65 00000064 4831C9                  				xor rcx, rcx ;amount of elememts in final buffer
+    66                                  				
+    67                                  READ_FORM:
+    68                                  				
+    69 00000067 8A06                    				mov al, byte[rsi]
+    70                                  
+    71 00000069 3C00                    				cmp al, 0
+    72 0000006B 0F84CD000000            				je BRAK
+    73                                  
+    74                                  
+    75 00000071 3C25                    				cmp al, '%'
+    76 00000073 741C                    				je READ_OTHER
+    77 00000075 EB0B                    				jmp CASUAL_PRINTING
+    78                                  
+    79                                  PRINT_PROCENT:
+    80 00000077 5F                      				pop rdi
+    81 00000078 5E                      				pop rsi
+    82 00000079 59                      				pop rcx
+    83 0000007A 415A                    				pop r10
+    84                                  
+    85 0000007C 48FFCE                  				dec rsi
+    86 0000007F 49FFCA                  				dec r10
+    87                                  
+    88                                  CASUAL_PRINTING:
+    89 00000082 8A06                    				mov al, [rsi]
+    90 00000084 8807                    				mov [rdi], al
+    91                                  				
+    92 00000086 48FFC7                  				inc rdi
+    93 00000089 48FFC6                  				inc rsi
+    94                                  
+    95 0000008C 48FFC1                  				inc rcx
+    96                                  
+    97 0000008F EBD6                    				jmp READ_FORM
+    98                                  
+    99                                  
+   100                                  READ_OTHER:
+   101 00000091 49FFC2                  				inc r10				
+   102 00000094 48FFC6                  				inc rsi
+   103 00000097 4831C0                  				xor rax, rax
+   104 0000009A 8A06                    				mov al, byte[rsi]
+   105                                  
+   106 0000009C 4152                    				push r10
+   107 0000009E 51                      				push rcx
+   108 0000009F 56                      				push rsi
+   109 000000A0 57                      				push rdi
+   110                                  
+   111 000000A1 48BB-                   				mov rbx, jmp_table
+   111 000000A3 [2B00000000000000] 
+   112 000000AB 48C1E003                				shl rax, 3
+   113 000000AF 4801C3                  				add rbx, rax
+   114 000000B2 FF23                    				jmp [rbx]
+   115                                  
+   116                                  ADD_OFFSET:
+   117                                  
+   118 000000B4 5F                      				pop rdi
+   119 000000B5 5E                      				pop rsi
+   120 000000B6 59                      				pop rcx
+   121 000000B7 415A                    				pop r10
+   122                                  
+   123 000000B9 4801C1                  				add rcx, rax
+   124 000000BC 4801C7                  				add rdi, rax
+   125                                  
+   126 000000BF 48FFC6                  				inc rsi
+   127                                  
+   128 000000C2 EBA3                    				jmp READ_FORM
+   129                                  
+   130                                  DECIMAL:		
+   131 000000C4 57                      				push rdi
+   132 000000C5 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   133 000000CA 50                      				push rax
+   134 000000CB E8F0000000              				call CONVERTER_10
+   135 000000D0 4883C410                				add rsp, 2 * 8
+   136                                  
+   137 000000D4 EBDE                    				jmp ADD_OFFSET
+   138                                  
+   139                                  SYMBOL:
+   140 000000D6 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   141 000000DB 488907                  				mov [rdi], rax
+   142 000000DE B801000000              				mov rax, 1
+   143                                  
+   144 000000E3 EBCF                    				jmp ADD_OFFSET
+   145                                  
+   146                                  STRING:			
+   147 000000E5 57                      				push rdi
+   148 000000E6 6A00                    				push 0
+   149 000000E8 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   150 000000ED 50                      				push rax
+   151 000000EE E838010000              				call PRINTMESSAGE
+   152 000000F3 4883C418                				add rsp, 3 * 8
+   153                                  
+   154 000000F7 EBBB                    				jmp ADD_OFFSET
+   155                                  
+   156                                  
+   157                                  HEX_NUMBER:
+   158 000000F9 57                      				push rdi
+   159 000000FA 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   160 000000FF 50                      				push rax
+   161 00000100 6A0F                    				push 0xF
+   162 00000102 6A04                    				push 4
+   163 00000104 E85B000000              				call BIT_CONVERTER
+   164 00000109 4883C420                				add rsp, 4 * 8
+   165                                  
+   166 0000010D EBA5                    				jmp ADD_OFFSET
+   167                                  
+   168                                  OCT_NUMBER:		
+   169 0000010F 57                      				push rdi
+   170 00000110 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   171 00000115 50                      				push rax
+   172 00000116 6A07                    				push 0x7
+   173 00000118 6A03                    				push 3
+   174 0000011A E845000000              				call BIT_CONVERTER
+   175 0000011F 4883C420                				add rsp, 4 * 8
+   176                                  
+   177 00000123 EB8F                    				jmp ADD_OFFSET
+   178                                  
+   179                                  BIN_NUMBER:		
+   180 00000125 57                      				push rdi
+   181 00000126 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   182 0000012B 50                      				push rax
+   183 0000012C 6A01                    				push 0x1
+   184 0000012E 6A01                    				push 1
+   185 00000130 E82F000000              				call BIT_CONVERTER
+   186 00000135 4883C420                				add rsp, 4 * 8
+   187                                  
+   188 00000139 E976FFFFFF              				jmp ADD_OFFSET
+   189                                  
+   190                                  BRAK:			
+   191 0000013E B801000000              				mov rax, 0x01 ;write64
+   192 00000143 BF01000000              				mov rdi, 1    ;stdout
+   193 00000148 48BE-                   				mov rsi, buffer
+   193 0000014A [0000000000000000] 
+   194 00000152 4889CA                  				mov rdx, rcx
+   195 00000155 0F05                    				syscall
+   196                                  
+   197 00000157 415F                    				pop r15
+   198 00000159 415E                    				pop r14
+   199 0000015B 415D                    				pop r13
+   200 0000015D 415C                    				pop r12
+   201 0000015F 5B                      				pop rbx
+   202                                  
+   203 00000160 415B                    				pop r11
+   204                                  
+   205 00000162 5D                      				pop rbp
+   206 00000163 C3                      				ret
+   207                                  
+   208                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+   209                                  ;converts number in the notation in parameters and puts the decimal number into the buffer by the offset in parameters	      	|
+   210                                  ;																																|
+   211                                  ;parameters in order from further: buffer offset, number to convert, convertion mask, power of binary system to convert 		|
+   212                                  ;						      						  																			|
+   213                                  ;length of the string in rax		 		 																					|	
+   214                                  ;						      						  																			|
+   215                                  ;rax, rdi, rcx, rdx, r9 are spoiled			     																				|
+   216                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+   217                                  BIT_CONVERTER:
+   218                                  
+   219 00000164 55                      				push rbp
+   220 00000165 4889E5                  				mov rbp, rsp
+   221                                  				
+   222 00000168 488B5520                				mov rdx, [rbp + 32] ;bit_number
+   223 0000016C 4D31C9                  				xor r9, r9
+   224                                  
+   225                                  CONTINUE_COUNTING:
+   226                                  				
+   227 0000016F 4889D0                  				mov rax, rdx
+   228 00000172 48234518                				and rax, [rbp + 24] ;convertion_mask
+   229                                  
+   230 00000176 8A4D10                  				mov cl, [rbp + 16] ;byte ptr system_to_convert
+   231 00000179 48D3EA                  				shr rdx, cl
+   232                                  
+   233 0000017C 49FFC1                  				inc r9
+   234                                  
+   235 0000017F 4883FA00                				cmp rdx, 0
+   236 00000183 77EA                    				ja CONTINUE_COUNTING
+   237                                  
+   238                                  
+   239 00000185 488B5520                				mov rdx, [rbp + 32] ;bit_number
+   240                                  
+   241 00000189 488B7D28                				mov rdi, [rbp + 40] ;buffer offset
+   242 0000018D 4C01CF                  				add rdi, r9
+   243 00000190 48FFCF                  				dec rdi
+   244                                  
+   245                                  CONTINUE_CONVERTING_16:
+   246                                  				
+   247 00000193 4889D0                  				mov rax, rdx
+   248 00000196 48234518                				and rax, [rbp + 24] ;convertion_mask
+   249                                  
+   250 0000019A 4883F809                				cmp rax, 9
+   251 0000019E 7706                    				ja ADD_LETTER
+   252 000001A0 4883C030                				add rax, '0'
+   253 000001A4 EB04                    				jmp GO_AWAY
+   254                                  
+   255 000001A6 4883C037                ADD_LETTER:		add rax, 'A' - 10
+   256                                  
+   257                                  GO_AWAY:
+   258                                  				
+   259 000001AA 8807                    				mov [rdi], al
+   260 000001AC 48FFCF                  				dec rdi
+   261                                  								
+   262 000001AF 8A4D10                  				mov cl, [rbp + 16] ;byte ptr system_to_convert
+   263 000001B2 48D3EA                  				shr rdx, cl
+   264                                  
+   265 000001B5 4883FA00                				cmp rdx, 0
+   266 000001B9 77D8                    				ja CONTINUE_CONVERTING_16
+   267                                  
+   268 000001BB 4C89C8                  				mov rax, r9
+   269                                  
+   270 000001BE 5D                      				pop rbp
+   271 000001BF C3                      				ret
+   272                                  
+   273                                  
+   274                                  
+   275                                  ;---------------------------------------------------------------------------|
+   276                                  ;puts the decimal number into the buffer by the offset in parameters      	|
+   277                                  ;																			|
+   278                                  ;parameters in order from further: buffer offset, number to put 			|
+   279                                  ;						      						  						|
+   280                                  ;length of the string in rax		 		 								|	
+   281                                  ;						      						  						|
+   282                                  ;rax, rdi, rcx, rdx, r9 are spoiled			     							|
+   283                                  ;---------------------------------------------------------------------------|
+   284                                  CONVERTER_10:
+   285                                  
+   286 000001C0 55                      				push rbp
+   287 000001C1 4889E5                  				mov rbp, rsp
+   288                                  
+   289 000001C4 488B4510                				mov rax, [rbp + 16]	;the_number
+   290 000001C8 4831C9                  				xor rcx, rcx
+   291                                  
+   292 000001CB 4D31C9                  				xor r9, r9
+   293                                  
+   294 000001CE FD                      				std
+   295                                  CONTINUE_COUNTING_DIJITS:
+   296                                  				
+   297 000001CF 4831D2                  				xor rdx, rdx
+   298 000001D2 BB0A000000              				mov rbx, 10
+   299 000001D7 48F7F3                  				div rbx
+   300                                  
+   301 000001DA 49FFC1                  				inc r9
+   302                                  
+   303 000001DD 4883F800                				cmp rax, 0
+   304 000001E1 77EC                    				ja CONTINUE_COUNTING_DIJITS
+   305                                  
+   306                                  
+   307 000001E3 488B4510                				mov rax, [rbp + 16]	;the_number
+   308 000001E7 488B7D18                				mov rdi, [rbp + 24] ;buffer offset
+   309 000001EB 4C01CF                  				add rdi, r9
+   310 000001EE 48FFCF                  				dec rdi
+   311                                  
+   312                                  CONTINUE_CONVERTING_10:
+   313                                  				
+   314 000001F1 4831D2                  				xor rdx, rdx
+   315 000001F4 BB0A000000              				mov rbx, 10
+   316 000001F9 48F7F3                  				div rbx
+   317                                  				
+   318 000001FC 50                      				push rax
+   319 000001FD 4889D0                  				mov rax, rdx
+   320                                  
+   321 00000200 0430                    				add al, '0'
+   322 00000202 8807                    				mov byte[rdi], al
+   323 00000204 48FFCF                  				dec rdi
+   324                                  				
+   325 00000207 58                      				pop rax
+   326 00000208 4883F800                				cmp rax, 0
+   327 0000020C 77E3                    				ja CONTINUE_CONVERTING_10
+   328                                  
+   329 0000020E 4C89C8                  				mov rax, r9 ;current string length
+   330                                  
+   331 00000211 5D                      				pop rbp
+   332 00000212 C3                      				ret
+   333                                  
+   334                                  
+   335                                  
+   336                                  
+   337                                  ;-----------------------------------------------------------|
+   338                                  ;counts the length of the string 							|
+   339                                  ;															|
+   340                                  ;offset of string is in rdi									|
+   341                                  ;							 							 	|
+   342                                  ;length of the string in rcx		 		 			 	|	
+   343                                  ;							 							 	|	
+   344                                  ;rax, rsi, rdi, rcx are spoiled				 				|
+   345                                  ;-----------------------------------------------------------|
+   346                                  STRING_LENGTH:		
+   347 00000213 FC                      			cld
+   348                                  
+   349 00000214 4889FE                  			mov rsi, rdi
+   350                                  
+   351 00000217 30C0                    			xor al, al 
+   352 00000219 4831C9                  			xor rcx, rcx
+   353 0000021C 48FFC9                  			dec rcx
+   354 0000021F F2AE                    			repne scasb
+   355                                  
+   356 00000221 4829F7                  			sub rdi, rsi
+   357 00000224 4889F9                  			mov rcx, rdi
+   358 00000227 48FFC9                  			dec rcx
+   359                                  
+   360 0000022A C3                      			ret
+   361                                  
+   362                                  ;-----------------------------------------------------------------------------------|
+   363                                  ;puts the message into the buffer by offset in parameters   						|
+   364                                  ;																					|
+   365                                  ;parameters in order from further: buffer offset, message length, message offset	|
+   366                                  ;							 							 							|
+   367                                  ;length of the string in rax		 		 			 							|	
+   368                                  ;							 							 							|	
+   369                                  ;rax, rbx, rdi, r9 are spoiled				 										|
+   370                                  ;-----------------------------------------------------------------------------------|
+   371                                  PRINTMESSAGE:	
+   372 0000022B 55                      			push rbp
+   373 0000022C 4889E5                  			mov rbp, rsp
+   374                                  
+   375 0000022F 4C8B4D18                			mov r9, [rbp + 24] ;message length
+   376 00000233 488B4D18                			mov rcx, [rbp + 24]
+   377 00000237 4883F900                			cmp rcx, 0
+   378 0000023B 7709                    			ja PUT_IN_BUFFER
+   379                                  
+   380 0000023D 488B7D10                			mov rdi, [rbp + 16] ;message offset
+   381 00000241 E8CDFFFFFF              			call STRING_LENGTH
+   382                                  
+   383                                  PUT_IN_BUFFER:
+   384 00000246 488B5D20                			mov rbx, [rbp + 32] ;buffer offset
+   385 0000024A 488B7D10                			mov rdi, [rbp + 16]
+   386 0000024E 4989C9                  			mov r9, rcx
+   387                                  
+   388                                  PUT:			
+   389 00000251 8A07                    			mov al, byte[rdi]
+   390 00000253 8803                    			mov [rbx], al
+   391 00000255 48FFC3                  			inc rbx
+   392 00000258 48FFC7                  			inc rdi
+   393                                  
+   394 0000025B E2F4                    			loop PUT
+   395                                  			
+   396 0000025D 4C89C8                  			mov rax, r9	
+   397                                  
+   398 00000260 5D                      			pop rbp
+   399 00000261 C3                      			ret
+   400                                  
+   401                                  
+   402                                  
+   403                                  
+   404                                  section 		.data
+   405                                  
+   406 00000000 4C6574207573206F75-     format_string:	db "Let us output C language: %x", 0x0A, 0
+   406 00000009 747075742043206C61-
+   406 00000012 6E67756167653A2025-
+   406 0000001B 780A00             
+   407                                  
+   408 0000001E 48656C6C6F2C20576F-     message:		db "Hello, World", 0									
+   408 00000027 726C6400           
+   409                                  message_length:	equ $ - message
+   410                                  
+   411                                  
+   412                                  jmp_table:		
+   413 0000002B [7700000000000000]-     				times ('b')			dq PRINT_PROCENT 
+   413 0000002B <rept>             
+   414 0000033B [2501000000000000]      									dq BIN_NUMBER
+   415 00000343 [D600000000000000]      							  		dq SYMBOL
+   416 0000034B [C400000000000000]      							  		dq DECIMAL
+   417 00000353 [7700000000000000]-     				times ('o'-'d' - 1) 	dq PRINT_PROCENT
+   417 00000353 <rept>             
+   418 000003A3 [0F01000000000000]      									dq OCT_NUMBER
+   419 000003AB [7700000000000000]-     				times ('s'-'o' - 1) 	dq PRINT_PROCENT
+   419 000003AB <rept>             
+   420 000003C3 [E500000000000000]      									dq STRING
+   421 000003CB [7700000000000000]-     				times ('x'-'s' - 1) 	dq PRINT_PROCENT
+   421 000003CB <rept>             
+   422 000003EB [F900000000000000]      									dq HEX_NUMBER
+   423 000003F3 [7700000000000000]-     				times (256 - 'x')	dq PRINT_PROCENT
+   423 000003F3 <rept>             
+   424                                  
+   425                                  
+   426                                  section 		.bss
+   427                                  
+   428 00000000 <res 00002710>          buffer			resb	10000

@@ -1,0 +1,482 @@
+     1                                  section 		.text
+     2                                  
+     3                                  global _start
+     4                                  global MY_PRINTF
+     5                                  extern NUMBER_SUM																;predefined entry point name for ld
+     6                                  
+     7                                  buffer_capacity	equ 10000
+     8                                  
+     9                                  _start:		
+    10 00000000 BF6D070000              				mov rdi, 1901
+    11 00000005 BE6D070000              				mov rsi, 1901
+    12 0000000A E8(00000000)            				call NUMBER_SUM
+    13                                  
+    14 0000000F 48BF-                   				mov rdi, format_string
+    14 00000011 [0000000000000000] 
+    15 00000019 BEDA0E0000              				mov rsi, 3802
+    16 0000001E E80A000000              				call MY_PRINTF
+    17                                  				
+    18                                  				; push 33
+    19                                  				; push 3802
+    20                                  				; push format_string
+    21                                  				; call PRINTF
+    22                                  				; add rsp, 3 * 8
+    23                                  
+    24 00000023 B83C000000              				mov rax, 0x3C ;exit64
+    25 00000028 4831FF                  				xor rdi, rdi
+    26 0000002B 0F05                    				syscall
+    27                                  
+    28                                  
+    29                                  ;-------------------------------------------------------------------------------------------|
+    30                                  ;a wrap around printf - pushes parametres in registers (according to system V) to stack		|
+    31                                  ;all registers that are required to be saved are saved at the beginning of printf 			|
+    32                                  ;																							|
+    33                                  ;parameters in order from further: according to system V							 		|		 		 						
+    34                                  ;-------------------------------------------------------------------------------------------|
+    35                                  MY_PRINTF:
+    36 0000002D 415B                    				pop r11
+    37                                  				
+    38 0000002F 4151                    				push r9
+    39 00000031 4150                    				push r8
+    40 00000033 51                      				push rcx
+    41 00000034 52                      				push rdx
+    42 00000035 56                      				push rsi
+    43 00000036 57                      				push rdi
+    44 00000037 E807000000              				call PRINTF
+    45 0000003C 4883C430                				add rsp, 6 * 8
+    46                                  
+    47 00000040 4153                    				push r11
+    48 00000042 C3                      				ret
+    49                                  
+    50                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+    51                                  ;prints the string according to the string inning and parameters in stack												      	|
+    52                                  ;																																|
+    53                                  ;parameters in order from further: parameters to output (unknown amount), format string 								 		|	
+    54                                  ;						      						  																			|
+    55                                  ;rax, rdi, rcx, rdx, r9, rsi, r10, r12 are spoiled			     																|
+    56                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+    57                                  PRINTF:
+    58 00000043 55                      				push rbp
+    59 00000044 4889E5                  				mov rbp, rsp
+    60                                  
+    61 00000047 4153                    				push r11
+    62                                  
+    63 00000049 53                      				push rbx
+    64 0000004A 4154                    				push r12
+    65 0000004C 4155                    				push r13
+    66 0000004E 4156                    				push r14
+    67 00000050 4157                    				push r15
+    68                                  
+    69 00000052 41BA02000000            				mov r10, 2 ;parameters counter
+    70 00000058 4D31E4                  				xor r12, r12 ;symbols counter
+    71                                  
+    72 0000005B 48BF-                   				mov rdi, buffer
+    72 0000005D [0000000000000000] 
+    73 00000065 488B7510                				mov rsi, [rbp + 16]
+    74                                  
+    75 00000069 4831C9                  				xor rcx, rcx ;amount of elememts in final buffer
+    76                                  				
+    77                                  READ_FORM:
+    78                                  				
+    79 0000006C 8A06                    				mov al, byte[rsi]
+    80                                  
+    81 0000006E 3C00                    				cmp al, 0
+    82 00000070 0F84CE000000            				je BRAK
+    83                                  
+    84                                  
+    85 00000076 3C25                    				cmp al, '%'
+    86 00000078 741A                    				je READ_OTHER
+    87 0000007A EB0B                    				jmp CASUAL_PRINTING
+    88                                  
+    89                                  
+    90                                  ;prints lonely procent
+    91                                  PRINT_PROCENT:
+    92 0000007C 5F                      				pop rdi
+    93 0000007D 5E                      				pop rsi
+    94 0000007E 59                      				pop rcx
+    95 0000007F 415A                    				pop r10
+    96                                  
+    97 00000081 48FFCE                  				dec rsi
+    98 00000084 49FFCA                  				dec r10
+    99                                  
+   100                                  CASUAL_PRINTING:
+   101 00000087 8A06                    				mov al, [rsi]
+   102 00000089 8807                    				mov [rdi], al
+   103                                  				
+   104 0000008B B801000000              				mov rax, 1
+   105 00000090 EB28                    				jmp CHECK
+   106                                  								; inc rdi
+   107                                  				; inc rsi
+   108                                  
+   109                                  				; mov rbx, 10000 ;checking if buffer is not full
+   110                                  				; dec rbx
+   111                                  				; cmp r12, rbx
+   112                                  				; ja BRAK
+   113                                  
+   114                                  				; inc r12
+   115                                  
+   116                                  				; inc rcx
+   117                                  
+   118 00000092 EBD8                    				jmp READ_FORM
+   119                                  
+   120                                  
+   121                                  READ_OTHER:
+   122 00000094 49FFC2                  				inc r10				
+   123 00000097 48FFC6                  				inc rsi
+   124 0000009A 4831C0                  				xor rax, rax
+   125 0000009D 8A06                    				mov al, byte[rsi]
+   126                                  
+   127 0000009F 4152                    				push r10
+   128 000000A1 51                      				push rcx
+   129 000000A2 56                      				push rsi
+   130 000000A3 57                      				push rdi
+   131                                  
+   132 000000A4 48BB-                   				mov rbx, jmp_table
+   132 000000A6 [2B00000000000000] 
+   133 000000AE FFA4C300FFFFFF          				jmp [rbx + rax * 8 - ' ' * 8] 
+   134                                  
+   135                                  ADD_OFFSET:
+   136                                  
+   137 000000B5 5F                      				pop rdi
+   138 000000B6 5E                      				pop rsi
+   139 000000B7 59                      				pop rcx
+   140 000000B8 415A                    				pop r10
+   141                                  
+   142                                  CHECK:
+   143 000000BA 4801C1                  				add rcx, rax
+   144 000000BD 4801C7                  				add rdi, rax
+   145                                  
+   146 000000C0 BB10270000              				mov rbx, buffer_capacity ;checking if buffer is not full
+   147 000000C5 4829C3                  				sub rbx, rax
+   148 000000C8 4939DC                  				cmp r12, rbx
+   149 000000CB 7777                    				ja BRAK
+   150                                  
+   151 000000CD 4901C4                  				add r12, rax
+   152                                  
+   153 000000D0 48FFC6                  				inc rsi
+   154                                  
+   155 000000D3 EB97                    				jmp READ_FORM
+   156                                  
+   157                                  
+   158                                  ;printing decimal number
+   159                                  DECIMAL:		
+   160 000000D5 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   161 000000DA E8E9000000              				call CONVERTER_10
+   162                                  				
+   163 000000DF EBD4                    				jmp ADD_OFFSET
+   164                                  
+   165                                  
+   166                                  ;printing one symbol
+   167                                  SYMBOL:
+   168 000000E1 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   169 000000E6 488907                  				mov [rdi], rax
+   170 000000E9 B801000000              				mov rax, 1
+   171                                  
+   172 000000EE EBC5                    				jmp ADD_OFFSET
+   173                                  
+   174                                  
+   175                                  ;printing string
+   176                                  STRING:			
+   177 000000F0 4831C9                  				xor rcx, rcx
+   178 000000F3 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   179 000000F8 E83D010000              				call PRINTMESSAGE
+   180                                  				
+   181 000000FD EBB6                    				jmp ADD_OFFSET
+   182                                  
+   183                                  
+   184                                  ;printing number in hex format
+   185                                  HEX_NUMBER:
+   186 000000FF 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   187 00000104 BE0F000000              				mov rsi, 0xF
+   188 00000109 B904000000              				mov rcx, 4
+   189 0000010E E857000000              				call BIT_CONVERTER
+   190                                  				
+   191 00000113 EBA0                    				jmp ADD_OFFSET
+   192                                  
+   193                                  
+   194                                  ;printing number in oct format
+   195                                  OCT_NUMBER:		
+   196 00000115 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   197 0000011A BE07000000              				mov rsi, 0x7
+   198 0000011F B903000000              				mov rcx, 3
+   199 00000124 E841000000              				call BIT_CONVERTER
+   200                                  				
+   201 00000129 EB8A                    				jmp ADD_OFFSET
+   202                                  
+   203                                  
+   204                                  ;printing number in binary format
+   205                                  BIN_NUMBER:		
+   206 0000012B 4A8B44D500              				mov rax, [rbp + r10 * 8] 
+   207 00000130 BE01000000              				mov rsi, 0x1
+   208 00000135 B901000000              				mov rcx, 1
+   209 0000013A E82B000000              				call BIT_CONVERTER
+   210                                  				
+   211 0000013F E971FFFFFF              				jmp ADD_OFFSET
+   212                                  
+   213                                  ;printing the whole buffer
+   214                                  BRAK:			
+   215 00000144 B801000000              				mov rax, 0x01 ;write64
+   216 00000149 BF01000000              				mov rdi, 1    ;stdout
+   217 0000014E 48BE-                   				mov rsi, buffer
+   217 00000150 [0000000000000000] 
+   218 00000158 4889CA                  				mov rdx, rcx
+   219 0000015B 0F05                    				syscall
+   220                                  
+   221 0000015D 415F                    				pop r15
+   222 0000015F 415E                    				pop r14
+   223 00000161 415D                    				pop r13
+   224 00000163 415C                    				pop r12
+   225 00000165 5B                      				pop rbx
+   226                                  
+   227 00000166 415B                    				pop r11
+   228                                  
+   229 00000168 5D                      				pop rbp
+   230 00000169 C3                      				ret
+   231                                  
+   232                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+   233                                  ;converts number in the notation in parameters and puts the decimal number into the buffer by the offset in parameters	      	|
+   234                                  ;																																|
+   235                                  ;bit_number in rax, conversion mask in rsi, bits to offset in rcx, buffer offset in rdi, amount of used bytes in r12			|
+   236                                  ;						      						  																			|
+   237                                  ;length of the string in rax, the sense of r12 must be saved		 		 													|	
+   238                                  ;						      						  																			|
+   239                                  ;rax, rdi, rcx, rdx, r9 are spoiled			     																				|
+   240                                  ;-------------------------------------------------------------------------------------------------------------------------------|
+   241                                  BIT_CONVERTER:
+   242                                  
+   243 0000016A 55                      				push rbp
+   244 0000016B 4889E5                  				mov rbp, rsp
+   245                                  				
+   246 0000016E 4889C2                  				mov rdx, rax
+   247 00000171 4989C2                  				mov r10, rax
+   248 00000174 4D31C9                  				xor r9, r9
+   249                                  
+   250                                  CONTINUE_COUNTING:
+   251                                  				
+   252                                  				
+   253 00000177 4889D0                  				mov rax, rdx
+   254 0000017A 4821F0                  				and rax, rsi
+   255 0000017D 48D3EA                  				shr rdx, cl
+   256                                  
+   257 00000180 49FFC1                  				inc r9
+   258                                  
+   259 00000183 4883FA00                				cmp rdx, 0
+   260 00000187 77EE                    				ja CONTINUE_COUNTING
+   261                                  
+   262 00000189 BB10270000              				mov rbx, buffer_capacity ;checking if buffer is not full
+   263 0000018E 4829CB                  				sub rbx, rcx
+   264 00000191 4939DC                  				cmp r12, rbx
+   265 00000194 772D                    				ja BIT_BREAK
+   266                                  
+   267                                  
+   268 00000196 4C89D2                  				mov rdx, r10 
+   269                                  				
+   270 00000199 4C01CF                  				add rdi, r9
+   271 0000019C 48FFCF                  				dec rdi
+   272                                  
+   273                                  CONTINUE_CONVERTING_16:
+   274                                  				
+   275 0000019F 4889D0                  				mov rax, rdx
+   276 000001A2 4821F0                  				and rax, rsi
+   277                                  				
+   278 000001A5 4883F809                				cmp rax, 9
+   279 000001A9 7706                    				ja ADD_LETTER
+   280 000001AB 4883C030                				add rax, '0'
+   281 000001AF EB04                    				jmp GO_AWAY
+   282                                  
+   283 000001B1 4883C037                ADD_LETTER:		add rax, 'A' - 10
+   284                                  
+   285                                  GO_AWAY:
+   286                                  				
+   287 000001B5 8807                    				mov [rdi], al
+   288 000001B7 48FFCF                  				dec rdi
+   289                                  								
+   290 000001BA 48D3EA                  				shr rdx, cl
+   291                                  
+   292 000001BD 4883FA00                				cmp rdx, 0
+   293 000001C1 77DC                    				ja CONTINUE_CONVERTING_16
+   294                                  
+   295                                  BIT_BREAK:
+   296 000001C3 4C89C8                  				mov rax, r9
+   297                                  
+   298 000001C6 5D                      				pop rbp
+   299 000001C7 C3                      				ret
+   300                                  
+   301                                  
+   302                                  
+   303                                  ;---------------------------------------------------------------------------|
+   304                                  ;puts the decimal number into the buffer by the offset in parameters      	|
+   305                                  ;																			|
+   306                                  ;number in rax, buffer offset in rdi, amount of used bytes in r12			|
+   307                                  ;						      						  						|
+   308                                  ;length of the string in rax, the sense of r12 must be saved		 		|	
+   309                                  ;						      						  						|
+   310                                  ;rax, rdi, rcx, rdx, r9 are spoiled			     							|
+   311                                  ;---------------------------------------------------------------------------|
+   312                                  CONVERTER_10:
+   313                                  
+   314 000001C8 55                      				push rbp
+   315 000001C9 4889E5                  				mov rbp, rsp
+   316                                  
+   317 000001CC 4989C2                  				mov r10, rax
+   318 000001CF 4831C9                  				xor rcx, rcx
+   319                                  
+   320 000001D2 4D31C9                  				xor r9, r9
+   321                                  
+   322 000001D5 FD                      				std
+   323                                  CONTINUE_COUNTING_DIJITS:
+   324                                  				
+   325 000001D6 4831D2                  				xor rdx, rdx
+   326 000001D9 BB0A000000              				mov rbx, 10
+   327 000001DE 48F7F3                  				div rbx
+   328                                  
+   329 000001E1 49FFC1                  				inc r9
+   330                                  
+   331 000001E4 4883F800                				cmp rax, 0
+   332 000001E8 77EC                    				ja CONTINUE_COUNTING_DIJITS
+   333                                  
+   334 000001EA BB10270000              				mov rbx, buffer_capacity ;checking if buffer is not full
+   335 000001EF 4C29CB                  				sub rbx, r9
+   336 000001F2 4939DC                  				cmp r12, rbx
+   337 000001F5 7726                    				ja BREAK_10
+   338                                  
+   339                                  
+   340 000001F7 4C89D0                  				mov rax, r10
+   341 000001FA 4C01CF                  				add rdi, r9
+   342 000001FD 48FFCF                  				dec rdi
+   343                                  
+   344                                  CONTINUE_CONVERTING_10:
+   345                                  				
+   346 00000200 4831D2                  				xor rdx, rdx
+   347 00000203 BB0A000000              				mov rbx, 10
+   348 00000208 48F7F3                  				div rbx
+   349                                  				
+   350 0000020B 50                      				push rax
+   351 0000020C 4889D0                  				mov rax, rdx
+   352                                  
+   353 0000020F 0430                    				add al, '0'
+   354 00000211 8807                    				mov byte[rdi], al
+   355 00000213 48FFCF                  				dec rdi
+   356                                  				
+   357 00000216 58                      				pop rax
+   358 00000217 4883F800                				cmp rax, 0
+   359 0000021B 77E3                    				ja CONTINUE_CONVERTING_10
+   360                                  
+   361                                  BREAK_10:
+   362 0000021D 4C89C8                  				mov rax, r9 ;current string length
+   363                                  
+   364 00000220 5D                      				pop rbp
+   365 00000221 C3                      				ret
+   366                                  
+   367                                  
+   368                                  
+   369                                  
+   370                                  ;-----------------------------------------------------------------------------------|
+   371                                  ;counts the length of the string 													|
+   372                                  ;																					|
+   373                                  ;offset of string is in rdi, amount of used bytes in r12							|
+   374                                  ;							 							 							|
+   375                                  ;length of the string in rcx, the sense of r12 must be saved		 		 		|	
+   376                                  ;							 							 							|	
+   377                                  ;rax, rsi, rdi, rcx are spoiled				 										|
+   378                                  ;-----------------------------------------------------------------------------------|
+   379                                  STRING_LENGTH:		
+   380 00000222 FC                      			cld
+   381                                  
+   382 00000223 4889FE                  			mov rsi, rdi
+   383                                  
+   384 00000226 30C0                    			xor al, al 
+   385 00000228 4831C9                  			xor rcx, rcx
+   386 0000022B 48FFC9                  			dec rcx
+   387 0000022E F2AE                    			repne scasb
+   388                                  
+   389 00000230 4829F7                  			sub rdi, rsi
+   390 00000233 4889F9                  			mov rcx, rdi
+   391 00000236 48FFC9                  			dec rcx
+   392                                  
+   393 00000239 C3                      			ret
+   394                                  
+   395                                  ;-------------------------------------------------------------------------------------------------------------------|
+   396                                  ;puts the message into the buffer by offset in parameters   														|
+   397                                  ;																													|
+   398                                  ;buffer offset in rdi, message length in rcx, message offset in rax, amount of used bytes in r12					|
+   399                                  ;							 							 															|
+   400                                  ;length of the string in rax, the sense of r12 must be saved		 		 			 							|	
+   401                                  ;							 							 															|	
+   402                                  ;rax, rbx, rdi, r9 are spoiled				 																		|
+   403                                  ;-------------------------------------------------------------------------------------------------------------------|
+   404                                  PRINTMESSAGE:	
+   405 0000023A 55                      			push rbp
+   406 0000023B 4889E5                  			mov rbp, rsp
+   407                                  
+   408 0000023E 4989C9                  			mov r9, rcx
+   409 00000241 4883F900                			cmp rcx, 0
+   410 00000245 770C                    			ja PUT_IN_BUFFER
+   411                                  
+   412 00000247 57                      			push rdi
+   413 00000248 4889C7                  			mov rdi, rax
+   414 0000024B 50                      			push rax
+   415 0000024C E8D1FFFFFF              			call STRING_LENGTH
+   416 00000251 58                      			pop rax
+   417 00000252 5F                      			pop rdi
+   418                                  
+   419                                  PUT_IN_BUFFER:
+   420 00000253 4889C6                  			mov rsi, rax
+   421 00000256 4989C9                  			mov r9, rcx
+   422                                  
+   423 00000259 BB10270000              			mov rbx, buffer_capacity ;checking if buffer is not full
+   424 0000025E 4829CB                  			sub rbx, rcx
+   425 00000261 4939DC                  			cmp r12, rbx
+   426 00000264 7708                    			ja DOBREAK
+   427                                  
+   428                                  PUT:
+   429 00000266 AC                      			lodsb
+   430 00000267 3C00                    			cmp al, 0
+   431 00000269 7403                    			je DOBREAK
+   432 0000026B AA                      			stosb
+   433                                  
+   434 0000026C E2F8                    			loop PUT
+   435                                  
+   436                                  DOBREAK:			
+   437 0000026E 4C89C8                  			mov rax, r9	
+   438                                  
+   439 00000271 5D                      			pop rbp
+   440 00000272 C3                      			ret
+   441                                  
+   442                                  
+   443                                  
+   444                                  
+   445                                  section 		.data
+   446                                  
+   447 00000000 4C6574207573206F75-     format_string:	db "Let us output C language: %x", 0x0A, 0
+   447 00000009 747075742043206C61-
+   447 00000012 6E67756167653A2025-
+   447 0000001B 780A00             
+   448                                  
+   449 0000001E 48656C6C6F2C20576F-     message:		db "Hello, World", 0									
+   449 00000027 726C6400           
+   450                                  message_length:	equ $ - message
+   451                                  
+   452                                  
+   453                                  jmp_table:		
+   454 0000002B [7C00000000000000]-     				times ('b' - ' ')	dq PRINT_PROCENT 
+   454 0000002B <rept>             
+   455 0000023B [2B01000000000000]      									dq BIN_NUMBER
+   456 00000243 [E100000000000000]      							  		dq SYMBOL
+   457 0000024B [D500000000000000]      							  		dq DECIMAL
+   458 00000253 [7C00000000000000]-     				times ('o'-'d' - 1) dq PRINT_PROCENT
+   458 00000253 <rept>             
+   459 000002A3 [1501000000000000]      									dq OCT_NUMBER
+   460 000002AB [7C00000000000000]-     				times ('s'-'o' - 1) dq PRINT_PROCENT
+   460 000002AB <rept>             
+   461 000002C3 [F000000000000000]      									dq STRING
+   462 000002CB [7C00000000000000]-     				times ('x'-'s' - 1) dq PRINT_PROCENT
+   462 000002CB <rept>             
+   463 000002EB [FF00000000000000]      									dq HEX_NUMBER
+   464 000002F3 [7C00000000000000]-     				times (256 - 'x')	dq PRINT_PROCENT
+   464 000002F3 <rept>             
+   465                                  
+   466                                  
+   467                                  section 		.bss
+   468                                  
+   469 00000000 <res 00002710>          buffer			resb	buffer_capacity

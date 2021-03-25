@@ -1,0 +1,18 @@
+all : 
+	gcc -no-pie -c -o C_code_for_asm_printf.obj C_code_for_asm_printf.cpp
+	nasm -f elf64 -l printf_func.lst printf_func.asm
+	ld -o printf_func printf_func.o C_code_for_asm_printf.obj
+	./printf_func
+
+
+# all : C_code_for_asm_printf.obj printf_func.o
+# 	ld -o printf_func printf_func.o C_code_for_asm_printf.obj
+# 	./printf_func
+
+# C_code_for_asm_printf.obj : C_code_for_asm_printf.cpp
+# 	gcc -no-pie -c -o C_code_for_asm_printf.obj C_code_for_asm_printf.cpp
+
+# printf_func.o : printf_func.asm 
+# 	nasm -f elf64 -l printf_func.lst printf_func.asm
+
+# .PHONY : all

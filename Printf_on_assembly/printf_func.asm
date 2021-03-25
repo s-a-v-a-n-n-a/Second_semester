@@ -1,32 +1,73 @@
 section 		.text
 
-global _start																;predefined entry point name for ld
+global _start
+global MY_PRINTF
+extern NUMBER_SUM																;predefined entry point name for ld
+
+buffer_capacity	equ 10000
 
 _start:		
-				push 33
-				push 3802
-				push format_string
-				call PRINTF
-				add rsp, 3 * 8
+				mov rdi, 1901
+				mov rsi, 1901
+				call NUMBER_SUM
+
+				mov rdi, format_string
+				mov rsi, 3802
+				call MY_PRINTF
+				
+				; push 33
+				; push 3802
+				; push format_string
+				; call PRINTF
+				; add rsp, 3 * 8
 
 				mov rax, 0x3C ;exit64
 				xor rdi, rdi
 				syscall
 
 
+;-------------------------------------------------------------------------------------------|
+;a wrap around printf - pushes parametres in registers (according to system V) to stack		|
+;all registers that are required to be saved are saved at the beginning of printf 			|
+;																							|
+;parameters in order from further: according to system V							 		|		 		 						
+;-------------------------------------------------------------------------------------------|
+MY_PRINTF:
+				pop r11
+				
+				push r9
+				push r8
+				push rcx
+				push rdx
+				push rsi
+				push rdi
+				call PRINTF
+				add rsp, 6 * 8
+
+				push r11
+				ret
 
 ;-------------------------------------------------------------------------------------------------------------------------------|
 ;prints the string according to the string inning and parameters in stack												      	|
 ;																																|
-;parameters in order from further: parameters to output (unknown amount), format string 								 		|		 		 																					|	
+;parameters in order from further: parameters to output (unknown amount), format string 								 		|	
 ;						      						  																			|
-;rax, rdi, rcx, rdx, r9, rsi, r10 are spoiled			     																	|
+;rax, rdi, rcx, rdx, r9, rsi, r10, r12 are spoiled			     																|
 ;-------------------------------------------------------------------------------------------------------------------------------|
 PRINTF:
 				push rbp
 				mov rbp, rsp
 
+				push r11
+
+				push rbx
+				push r12
+				push r13
+				push r14
+				push r15
+
 				mov r10, 2 ;parameters counter
+				xor r12, r12 ;symbols counter
 
 				mov rdi, buffer
 				mov rsi, [rbp + 16]
@@ -45,6 +86,8 @@ READ_FORM:
 				je READ_OTHER
 				jmp CASUAL_PRINTING
 
+
+;prints lonely procent
 PRINT_PROCENT:
 				pop rdi
 				pop rsi
@@ -58,10 +101,19 @@ CASUAL_PRINTING:
 				mov al, [rsi]
 				mov [rdi], al
 				
-				inc rdi
-				inc rsi
+				mov rax, 1
+				jmp CHECK
+								; inc rdi
+				; inc rsi
 
-				inc rcx
+				; mov rbx, 10000 ;checking if buffer is not full
+				; dec rbx
+				; cmp r12, rbx
+				; ja BRAK
+
+				; inc r12
+
+				; inc rcx
 
 				jmp READ_FORM
 
@@ -78,9 +130,7 @@ READ_OTHER:
 				push rdi
 
 				mov rbx, jmp_table
-				shl rax, 3
-				add rbx, rax
-				jmp [rbx]
+				jmp [rbx + rax * 8 - ' ' * 8] 
 
 ADD_OFFSET:
 
@@ -89,22 +139,31 @@ ADD_OFFSET:
 				pop rcx
 				pop r10
 
+CHECK:
 				add rcx, rax
 				add rdi, rax
+
+				mov rbx, buffer_capacity ;checking if buffer is not full
+				sub rbx, rax
+				cmp r12, rbx
+				ja BRAK
+
+				add r12, rax
 
 				inc rsi
 
 				jmp READ_FORM
 
-DECIMAL:		
-				push rdi
-				mov rax, [rbp + r10 * 8] 
-				push rax
-				call CONVERTER_10
-				add rsp, 2 * 8
 
+;printing decimal number
+DECIMAL:		
+				mov rax, [rbp + r10 * 8] 
+				call CONVERTER_10
+				
 				jmp ADD_OFFSET
 
+
+;printing one symbol
 SYMBOL:
 				mov rax, [rbp + r10 * 8] 
 				mov [rdi], rax
@@ -112,50 +171,46 @@ SYMBOL:
 
 				jmp ADD_OFFSET
 
+
+;printing string
 STRING:			
-				push rdi
-				push 0
+				xor rcx, rcx
 				mov rax, [rbp + r10 * 8] 
-				push rax
 				call PRINTMESSAGE
-				add rsp, 3 * 8
-
+				
 				jmp ADD_OFFSET
 
 
+;printing number in hex format
 HEX_NUMBER:
-				push rdi
 				mov rax, [rbp + r10 * 8] 
-				push rax
-				push 0xF
-				push 4
+				mov rsi, 0xF
+				mov rcx, 4
 				call BIT_CONVERTER
-				add rsp, 4 * 8
-
+				
 				jmp ADD_OFFSET
 
+
+;printing number in oct format
 OCT_NUMBER:		
-				push rdi
 				mov rax, [rbp + r10 * 8] 
-				push rax
-				push 0x7
-				push 3
+				mov rsi, 0x7
+				mov rcx, 3
 				call BIT_CONVERTER
-				add rsp, 4 * 8
-
+				
 				jmp ADD_OFFSET
 
+
+;printing number in binary format
 BIN_NUMBER:		
-				push rdi
 				mov rax, [rbp + r10 * 8] 
-				push rax
-				push 0x1
-				push 1
+				mov rsi, 0x1
+				mov rcx, 1
 				call BIT_CONVERTER
-				add rsp, 4 * 8
-
+				
 				jmp ADD_OFFSET
 
+;printing the whole buffer
 BRAK:			
 				mov rax, 0x01 ;write64
 				mov rdi, 1    ;stdout
@@ -163,15 +218,23 @@ BRAK:
 				mov rdx, rcx
 				syscall
 
+				pop r15
+				pop r14
+				pop r13
+				pop r12
+				pop rbx
+
+				pop r11
+
 				pop rbp
 				ret
 
 ;-------------------------------------------------------------------------------------------------------------------------------|
 ;converts number in the notation in parameters and puts the decimal number into the buffer by the offset in parameters	      	|
 ;																																|
-;parameters in order from further: buffer offset, number to convert, convertion mask, power of binary system to convert 		|
+;bit_number in rax, conversion mask in rsi, bits to offset in rcx, buffer offset in rdi, amount of used bytes in r12			|
 ;						      						  																			|
-;length of the string in rax		 		 																					|	
+;length of the string in rax, the sense of r12 must be saved		 		 													|	
 ;						      						  																			|
 ;rax, rdi, rcx, rdx, r9 are spoiled			     																				|
 ;-------------------------------------------------------------------------------------------------------------------------------|
@@ -180,15 +243,15 @@ BIT_CONVERTER:
 				push rbp
 				mov rbp, rsp
 				
-				mov rdx, [rbp + 32] ;bit_number
+				mov rdx, rax
+				mov r10, rax
 				xor r9, r9
 
 CONTINUE_COUNTING:
 				
+				
 				mov rax, rdx
-				and rax, [rbp + 24] ;convertion_mask
-
-				mov cl, [rbp + 16] ;byte ptr system_to_convert
+				and rax, rsi
 				shr rdx, cl
 
 				inc r9
@@ -196,18 +259,22 @@ CONTINUE_COUNTING:
 				cmp rdx, 0
 				ja CONTINUE_COUNTING
 
+				mov rbx, buffer_capacity ;checking if buffer is not full
+				sub rbx, rcx
+				cmp r12, rbx
+				ja BIT_BREAK
 
-				mov rdx, [rbp + 32] ;bit_number
 
-				mov rdi, [rbp + 40] ;buffer offset
+				mov rdx, r10 
+				
 				add rdi, r9
 				dec rdi
 
 CONTINUE_CONVERTING_16:
 				
 				mov rax, rdx
-				and rax, [rbp + 24] ;convertion_mask
-
+				and rax, rsi
+				
 				cmp rax, 9
 				ja ADD_LETTER
 				add rax, '0'
@@ -220,12 +287,12 @@ GO_AWAY:
 				mov [rdi], al
 				dec rdi
 								
-				mov cl, [rbp + 16] ;byte ptr system_to_convert
 				shr rdx, cl
 
 				cmp rdx, 0
 				ja CONTINUE_CONVERTING_16
 
+BIT_BREAK:
 				mov rax, r9
 
 				pop rbp
@@ -236,9 +303,9 @@ GO_AWAY:
 ;---------------------------------------------------------------------------|
 ;puts the decimal number into the buffer by the offset in parameters      	|
 ;																			|
-;parameters in order from further: buffer offset, number to put 			|
+;number in rax, buffer offset in rdi, amount of used bytes in r12			|
 ;						      						  						|
-;length of the string in rax		 		 								|	
+;length of the string in rax, the sense of r12 must be saved		 		|	
 ;						      						  						|
 ;rax, rdi, rcx, rdx, r9 are spoiled			     							|
 ;---------------------------------------------------------------------------|
@@ -247,7 +314,7 @@ CONVERTER_10:
 				push rbp
 				mov rbp, rsp
 
-				mov rax, [rbp + 16]	;the_number
+				mov r10, rax
 				xor rcx, rcx
 
 				xor r9, r9
@@ -264,9 +331,13 @@ CONTINUE_COUNTING_DIJITS:
 				cmp rax, 0
 				ja CONTINUE_COUNTING_DIJITS
 
+				mov rbx, buffer_capacity ;checking if buffer is not full
+				sub rbx, r9
+				cmp r12, rbx
+				ja BREAK_10
 
-				mov rax, [rbp + 16]	;the_number
-				mov rdi, [rbp + 24] ;buffer offset
+
+				mov rax, r10
 				add rdi, r9
 				dec rdi
 
@@ -287,6 +358,7 @@ CONTINUE_CONVERTING_10:
 				cmp rax, 0
 				ja CONTINUE_CONVERTING_10
 
+BREAK_10:
 				mov rax, r9 ;current string length
 
 				pop rbp
@@ -295,15 +367,15 @@ CONTINUE_CONVERTING_10:
 
 
 
-;-----------------------------------------------------------|
-;counts the length of the string 							|
-;															|
-;offset of string is in rdi									|
-;							 							 	|
-;length of the string in rcx		 		 			 	|	
-;							 							 	|	
-;rax, rsi, rdi, rcx are spoiled				 				|
-;-----------------------------------------------------------|
+;-----------------------------------------------------------------------------------|
+;counts the length of the string 													|
+;																					|
+;offset of string is in rdi, amount of used bytes in r12							|
+;							 							 							|
+;length of the string in rcx, the sense of r12 must be saved		 		 		|	
+;							 							 							|	
+;rax, rsi, rdi, rcx are spoiled				 										|
+;-----------------------------------------------------------------------------------|
 STRING_LENGTH:		
 			cld
 
@@ -320,40 +392,48 @@ STRING_LENGTH:
 
 			ret
 
-;-----------------------------------------------------------------------------------|
-;puts the message into the buffer by offset in parameters   						|
-;																					|
-;parameters in order from further: buffer offset, message length, message offset	|
-;							 							 							|
-;length of the string in rax		 		 			 							|	
-;							 							 							|	
-;rax, rbx, rdi, r9 are spoiled				 										|
-;-----------------------------------------------------------------------------------|
+;-------------------------------------------------------------------------------------------------------------------|
+;puts the message into the buffer by offset in parameters   														|
+;																													|
+;buffer offset in rdi, message length in rcx, message offset in rax, amount of used bytes in r12					|
+;							 							 															|
+;length of the string in rax, the sense of r12 must be saved		 		 			 							|	
+;							 							 															|	
+;rax, rbx, rdi, r9 are spoiled				 																		|
+;-------------------------------------------------------------------------------------------------------------------|
 PRINTMESSAGE:	
 			push rbp
 			mov rbp, rsp
 
-			mov r9, [rbp + 24] ;message length
-			mov rcx, [rbp + 24]
+			mov r9, rcx
 			cmp rcx, 0
 			ja PUT_IN_BUFFER
 
-			mov rdi, [rbp + 16] ;message offset
+			push rdi
+			mov rdi, rax
+			push rax
 			call STRING_LENGTH
+			pop rax
+			pop rdi
 
 PUT_IN_BUFFER:
-			mov rbx, [rbp + 32] ;buffer offset
-			mov rdi, [rbp + 16]
+			mov rsi, rax
 			mov r9, rcx
 
-PUT:			
-			mov al, byte[rdi]
-			mov [rbx], al
-			inc rbx
-			inc rdi
+			mov rbx, buffer_capacity ;checking if buffer is not full
+			sub rbx, rcx
+			cmp r12, rbx
+			ja DOBREAK
+
+PUT:
+			lodsb
+			cmp al, 0
+			je DOBREAK
+			stosb
 
 			loop PUT
-			
+
+DOBREAK:			
 			mov rax, r9	
 
 			pop rbp
@@ -364,26 +444,26 @@ PUT:
 
 section 		.data
 
-format_string:	db "first(%%d) : %c aaaaa", 0x0A, 0
+format_string:	db "Let us output C language: %x", 0x0A, 0
 
 message:		db "Hello, World", 0									
 message_length:	equ $ - message
 
 
 jmp_table:		
-				times ('b')			dq PRINT_PROCENT 
+				times ('b' - ' ')	dq PRINT_PROCENT 
 									dq BIN_NUMBER
 							  		dq SYMBOL
 							  		dq DECIMAL
-				times ('o'-'d') 	dq PRINT_PROCENT
+				times ('o'-'d' - 1) dq PRINT_PROCENT
 									dq OCT_NUMBER
-				times ('s'-'o') 	dq PRINT_PROCENT
+				times ('s'-'o' - 1) dq PRINT_PROCENT
 									dq STRING
-				times ('x'-'s') 	dq PRINT_PROCENT
+				times ('x'-'s' - 1) dq PRINT_PROCENT
 									dq HEX_NUMBER
 				times (256 - 'x')	dq PRINT_PROCENT
 
 
 section 		.bss
 
-buffer			resb	10000
+buffer			resb	buffer_capacity
