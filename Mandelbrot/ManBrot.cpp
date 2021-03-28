@@ -1,6 +1,12 @@
 #include <TXLib.h>
 #include <emmintrin.h>
 
+//---------------------------------------------------------
+//cd Desktop\Компиляторы\DOS\DOSBox\Doc\Mandelbrot
+//
+//g++ -msse2 ManBrot.cpp
+//---------------------------------------------------------
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -9,18 +15,6 @@ const float horizontal_size = 300;
 const float vertical_size   = 300;
 const int radius = 2;
 const int maximum_iterations_amount = 255;
-
-typedef union array_to_register_floats
-{
-	__m128 xmm;
-	float floats[4];
-} xmm;
-
-typedef union array_to_register_ints
-{
-	__m128i regs;
-	int ints[4];
-} reg;
 
 typedef struct screen_information
 {
@@ -39,20 +33,23 @@ typedef struct screen_information
 }s_information;
 
 s_information *screen_new();
-void screen_set_pixel_color(s_information *screen, long long pixel, char red, char green, char blue);
+inline void screen_set_pixel_color(s_information *screen, long long pixel, char red, char green, char blue);
 void screen_delete(s_information *screen);
-void screen_update_information(s_information *screen);
+inline void screen_update_information(s_information *screen);
+inline void screen_put_color(s_information *screen, const int index, const int variable);
 
-inline xmm four_float_set_one_value (float value);
-inline reg four_int_set_one_value   (int value);
-inline xmm four_float_multiply (xmm array_1, xmm array_2);
-inline xmm four_float_add      (xmm array_1, xmm array_2);
-inline reg four_float_add_with_int (reg array_1, xmm array_2);
-inline xmm four_float_sub          (xmm array_1, xmm array_2);
-inline xmm four_float_copy (xmm array_with);
+inline __m128 sse_copy_value(const __m128 value);
 
-inline xmm four_float_compare(xmm array_with, xmm result);
-inline int four_flat_make_mask(xmm float_mask);
+inline __m128 sse_count_square(const __m128 value);
+inline __m128 sse_count_euclidean_distance(const __m128 x, const __m128 y);
+
+inline __m128 sse_count_re_complex_square(const __m128 x, const __m128 y);
+inline __m128 sse_count_im_complex_square(const __m128 x, const __m128 y);
+
+inline __m128i sse_add_floats_and_ints(const __m128 floats, const __m128i ints);
+
+inline __m128 sse_x_coordinate_from_left_corner(const float left_corner_x, const float offset_x, const float dx);
+inline __m128 sse_y_coordinate_from_left_corner(const float left_corner_y, const float offset_y, const float dy);
 
 void draw_mandelbrot();
 
@@ -83,7 +80,7 @@ s_information *screen_new()
 	return screen;
 }
 
-void screen_set_pixel_color(s_information *screen, long long pixel, char red, char green, char blue)
+inline void screen_set_pixel_color(s_information *screen, long long pixel, char red, char green, char blue)
 {
 	screen->screen[pixel] = {(BYTE) red, (BYTE) green, (BYTE) blue};
 }
@@ -93,7 +90,7 @@ void screen_delete(s_information *screen)
 	free(screen);
 }
 
-void screen_update_information(s_information *screen)
+inline void screen_update_information(s_information *screen)
 {
 	if (txGetAsyncKeyState (VK_RIGHT)) screen->center_x += screen->dx * (txGetAsyncKeyState (VK_SHIFT)? 50.f : 5.f);
     if (txGetAsyncKeyState (VK_LEFT))  screen->center_x -= screen->dx * (txGetAsyncKeyState (VK_SHIFT)? 50.f : 5.f);
@@ -114,82 +111,62 @@ void screen_update_information(s_information *screen)
 	screen->dy = (screen->real_vertical_size/screen->vertical_screen_size);
 }
 
-
-inline xmm four_float_set_one_value (float value)
+inline void screen_put_color(s_information *screen, const int index, const int variable)
 {
-	xmm result = {.floats = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		result.floats[k] = value;
-	return result;
+	int red = 255 * (variable < 255);
+	int blue = 64 * (variable < 64);
+	screen_set_pixel_color(screen, index, red, 255 - variable, blue);
 }
 
-inline reg four_int_set_one_value (int value)
+inline __m128 sse_copy_value(const __m128 value)
 {
-	reg result = {.ints = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		result.ints[k] = value;
-	return result;
+	return _mm_move_ss(value, value);
 }
 
-inline xmm four_float_multiply (xmm array_1, xmm array_2)
+inline __m128 sse_count_square(const __m128 value)
 {
-	xmm result = {.floats = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		result.floats[k] = array_1.floats[k] * array_2.floats[k];
-	return result;
+	return _mm_mul_ps(value, value);
 }
 
-inline xmm four_float_add (xmm array_1, xmm array_2)
+inline __m128 sse_count_euclidean_distance(const __m128 x, const __m128 y)
 {
-	xmm result = {.floats = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		result.floats[k] = array_1.floats[k] + array_2.floats[k];
-	return result;
+	return _mm_add_ps(_mm_mul_ps(x, x), _mm_mul_ps(y, y));
 }
 
-inline reg four_float_add_with_int (reg array_1, xmm array_2)
+inline __m128 sse_count_re_complex_square(const __m128 x, const __m128 y)
 {
-	reg result = {.ints = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		result.ints[k] = array_1.ints[k] + (int)array_2.floats[k];
-	return result;
+	__m128 square_x = sse_count_square(x);
+	__m128 square_y = sse_count_square(y);
+
+	return _mm_sub_ps(square_x, square_y);
 }
 
-inline xmm four_float_sub (xmm array_1, xmm array_2)
+inline __m128 sse_count_im_complex_square(const __m128 x, const __m128 y)
 {
-	xmm result = {.floats = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		result.floats[k] = array_1.floats[k] - array_2.floats[k];
-	return result;
+	__m128 xy = _mm_mul_ps(x, y);
+
+	return _mm_add_ps(xy, xy);
 }
 
-inline xmm four_float_copy (xmm array_with)
+inline __m128i sse_add_floats_and_ints(const __m128 floats, const __m128i ints)
 {
-	xmm result = {.floats = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		result.floats[k] = array_with.floats[k];
-	return result;
+	__m128i floats_in_ints = _mm_castps_si128(floats);
+
+	return _mm_sub_epi32(ints, floats_in_ints);
 }
 
-inline xmm four_float_compare(xmm array_to, xmm array_with)
+//left_corner_x + j * dx
+inline __m128 sse_x_coordinate_from_left_corner(const float left_corner_x, const float offset_x, const float dx)
 {
-	xmm result = {.floats = {0, 0, 0, 0}};
-	for (int k = 0; k < 4; k++)
-		if (array_to.floats[k] <= array_with.floats[k])
-			result.floats[k] = 1;
-		else
-			result.floats[k] = 0;
-	return result;
+	__m128 zero_one_two_three = _mm_set_ps(3.f, 2.f, 1.f, 0.f);
+	__m128 y_coordinate_tmp_value = _mm_add_ps(_mm_set_ps1((float)offset_x), zero_one_two_three);
+
+	return _mm_add_ps(_mm_mul_ps(_mm_set_ps1(dx), y_coordinate_tmp_value), _mm_set_ps1(left_corner_x));
 }
 
-inline int four_flat_make_mask(xmm float_mask)
+inline __m128 sse_y_coordinate_from_left_corner(const float left_corner_y, const float offset_y, const float dy)
 {
-	int mask = 0;
-	for (int k = 0; k < 4; k++)
-	{
-		mask = mask * 2 + (int) float_mask.floats[k];
-	}
-	return mask;
+	return _mm_set_ps1(left_corner_y + (float)offset_y * dy);
 }
 
 void draw_mandelbrot()
@@ -201,9 +178,10 @@ void draw_mandelbrot()
     s_information *mandelbrot_screen = screen_new();
 
 	int height = (int)(mandelbrot_screen->vertical_screen_size);
-	int width = (int)(mandelbrot_screen->horizontal_screen_size);
+	int width  = (int)(mandelbrot_screen->horizontal_screen_size);
 
-	xmm square_radius = four_float_set_one_value(radius * radius);
+	__m128 square_radius = _mm_set_ps1(radius);
+	square_radius = sse_count_square(square_radius);
 
 	while(true)
 	{
@@ -223,48 +201,42 @@ void draw_mandelbrot()
 			int current_line = i * width;
 			for (int j = 0; j + 3 < width; j += 4)
 			{
-				xmm points_x_0 = four_float_set_one_value(mandelbrot_screen->dx);
-				
-				xmm zero_one_two_three = {.floats = {0, 1, 2, 3}}; 
-				xmm j_value = four_float_add(four_float_set_one_value((float)j), zero_one_two_three);
-				points_x_0 = four_float_add(four_float_multiply(points_x_0, j_value), four_float_set_one_value(left_corner_x));
+				__m128 points_x_0 = sse_x_coordinate_from_left_corner(left_corner_x, j, mandelbrot_screen->dx);
+				__m128 points_y_0 = sse_y_coordinate_from_left_corner(left_corner_y, i, mandelbrot_screen->dy);
 
-				xmm points_y_0 = four_float_set_one_value(left_corner_y + (float)i * mandelbrot_screen->dy); 
+				__m128 points_x = sse_copy_value(points_x_0);
+	 			__m128 points_y = sse_copy_value(points_y_0);
 
-				xmm points_x = four_float_copy(points_x_0);
-	 			xmm points_y = four_float_copy(points_y_0);
-
-				xmm place   = four_float_set_one_value(1);
-				reg counter = four_int_set_one_value(0);
+				__m128 place    = _mm_set_ps1(1.f);
+				__m128i counter = _mm_setzero_si128();
 				int common_counter = 0;
 
-				while (common_counter < maximum_iterations_amount)
+				while (true)
 				{
-					xmm square_points_x = four_float_multiply (points_x, points_x);
-					xmm square_points_y = four_float_multiply (points_y, points_y);
-
-					xmm tmp_points_x = four_float_add(four_float_sub (square_points_x, square_points_y), points_x_0); 
-					xmm tmp_points_y = four_float_multiply (points_x, points_y);
-					tmp_points_y = four_float_add(four_float_add(tmp_points_y, tmp_points_y), points_y_0);
-
-					xmm tmp_points_square_x = four_float_multiply (tmp_points_x, tmp_points_x);
-					xmm tmp_points_square_y = four_float_multiply (tmp_points_y, tmp_points_y);
-
-					xmm distances_from_center = four_float_add (tmp_points_square_x, tmp_points_square_y);
-
-					place = four_float_compare (distances_from_center, square_radius);
-					int mask = four_flat_make_mask(place);
-					if (!mask)
+					__m128 tmp_points_x = _mm_add_ps(sse_count_re_complex_square(points_x, points_y), points_x_0);
+					__m128 tmp_points_y = _mm_add_ps(sse_count_im_complex_square(points_x, points_y), points_y_0);
+					
+					__m128 distances_from_center = sse_count_euclidean_distance(tmp_points_x, tmp_points_y);
+					
+					place = _mm_cmple_ps(distances_from_center, square_radius);
+					
+					int mask = _mm_movemask_ps(place);
+					if (!mask || !(common_counter < maximum_iterations_amount))
 						break;
 
-					counter = four_float_add_with_int(counter, place);
-					points_x = four_float_copy (tmp_points_x); points_y = four_float_copy (tmp_points_y);
+					counter = sse_add_floats_and_ints(place, counter);
+					
+					points_x = sse_copy_value(tmp_points_x);
+					points_y = sse_copy_value(tmp_points_y);
 
 					common_counter++;
 				}
-
+				
+				int *color_values = (int*) &counter;
 				for (int k = 0; k < 4; k++)
-					screen_set_pixel_color(mandelbrot_screen, current_line + j + k, (char)counter.ints[k], 128, 255 - (char)counter.ints[k]);
+				{
+					screen_put_color(mandelbrot_screen, current_line + j + k, color_values[k]);
+				}
 			}
 		}
 		printf ("\t\r%.0lf", txGetFPS());
