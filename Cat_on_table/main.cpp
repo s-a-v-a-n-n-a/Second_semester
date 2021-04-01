@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <ctime>
 
-const unsigned char color_maximum = 255;
+const int color_maximum = 256;
 
 const size_t mixint_amount = 500;
 
@@ -42,6 +42,8 @@ struct screen_information
 	size_t height;
 };
 
+static inline void copy_color_from_sfml_color(sf::Color color, screen_information *screen, size_t line, size_t column);
+
 screen_information *screen_new(const char *file_name);
 screen_code screen_construct(screen_information *screen, const char *file_name);
 screen_code screen_delete(screen_information *screen);
@@ -75,6 +77,14 @@ screen_information *screen_new(const char *file_name)
 	return screen;
 }
 
+static inline void copy_color_from_sfml_color(sf::Color color, screen_information *screen, size_t line, size_t column)
+{
+	screen->data[line * screen->width + column].r = color.r;
+	screen->data[line * screen->width + column].g = color.g;
+	screen->data[line * screen->width + column].b = color.b;
+	screen->data[line * screen->width + column].a = color.a;
+}
+
 screen_code screen_construct(screen_information *screen, const char *file_name)
 {
 	sf::Image image;
@@ -92,10 +102,7 @@ screen_code screen_construct(screen_information *screen, const char *file_name)
 		for (size_t j = 0; j < screen->width; j++)
 		{
 			sf::Color color = image.getPixel(j, i);
-			screen->data[i * screen->width + j].r = color.r;
-			screen->data[i * screen->width + j].g = color.g;
-			screen->data[i * screen->width + j].b = color.b;
-			screen->data[i * screen->width + j].a = color.a;
+			copy_color_from_sfml_color(color, screen, i, j);
 		}
 
 	return SCREEN_OK;
@@ -154,11 +161,14 @@ screen_code screen_mix(screen_information *where_to, screen_information *where_f
 
 			Color front_pixel = where_from->data[i * where_from->width + j];
 			Color back_pixel = where_to->data[i * where_to->width + j];
-			float a = (float)front_pixel.a / (float)color_maximum;
-			pixel.r = ((float)front_pixel.r * a + (float)back_pixel.r * (1 - a));
-			pixel.g = ((float)front_pixel.g * a + (float)back_pixel.g * (1 - a));
-			pixel.b = ((float)front_pixel.b * a + (float)back_pixel.b * (1 - a));
-			pixel.a = color_maximum;
+
+			int transparency = (int)front_pixel.a;
+
+			pixel.r = ((int)front_pixel.r * transparency + (int)back_pixel.r * ((int)color_maximum - transparency)) >> (int)8;
+			pixel.g = ((int)front_pixel.g * transparency + (int)back_pixel.g * ((int)color_maximum - transparency)) >> (int)8;
+			pixel.b = ((int)front_pixel.b * transparency + (int)back_pixel.b * ((int)color_maximum - transparency)) >> (int)8;
+
+			pixel.a = color_maximum - 1;
 
 			where_to->data[i * where_to->width + j] = pixel;
 		}
