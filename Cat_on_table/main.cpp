@@ -27,7 +27,8 @@ const char *screen_state_text[]
 };
 
 
-struct Color {
+struct Color 
+{
 	unsigned char a;
 	unsigned char r;
 	unsigned char g;
@@ -61,7 +62,9 @@ int main()
 
 screen_information *screen_new(const char *file_name) 
 {
-	screen_information *screen = (screen_information*)calloc(1, sizeof(screen_information)); //Проверить, прошёл ли каллок
+	screen_information *screen = (screen_information*)calloc(1, sizeof(screen_information));
+	if (!screen)
+		return NULL;
 	
 	if (screen_construct(screen, file_name) != SCREEN_OK)
 	{
