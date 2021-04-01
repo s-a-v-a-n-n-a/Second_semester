@@ -1,5 +1,5 @@
 #include <SFML/Graphics.hpp>
-#include <assert.h>
+#include <emmintrin.h>
 #include <ctime>
 
 const int color_maximum = 256;
@@ -99,10 +99,13 @@ screen_code screen_construct(screen_information *screen, const char *file_name)
 		return SCREEN_NO_CONSTRUCT;
 
 	for (size_t i = 0; i < screen->height; i++)
-		for (size_t j = 0; j < screen->width; j++)
+		for (size_t j = 0; j + 3 < screen->width; j += 4)
 		{
-			sf::Color color = image.getPixel(j, i);
-			copy_color_from_sfml_color(color, screen, i, j);
+			for (int k = 0; k < 4; k++)
+			{	
+				sf::Color color = image.getPixel(j + k, i);
+				copy_color_from_sfml_color(color, screen, i, j + k);
+			}
 		}
 
 	return SCREEN_OK;
@@ -137,12 +140,15 @@ screen_code screen_load(sf::Image *image, screen_information *screen)
 		return SCREEN_SEGMENT_FAULT;
 
 	for (size_t i = 0; i < screen->height; i++) {
-		for (size_t j = 0; j < screen->width; j++)
+		for (size_t j = 0; j + 3 < screen->width; j += 4)
 		{
-			sf::Color color(screen->data[i * screen->width + j].r, screen->data[i * screen->width + j].g,
-			                screen->data[i * screen->width + j].b, screen->data[i * screen->width + j].a);
+			for (int k = 0; k < 4; k++)
+			{
+				sf::Color color(screen->data[i * screen->width + j + k].r, screen->data[i * screen->width + j + k].g,
+				                screen->data[i * screen->width + j + k].b, screen->data[i * screen->width + j + k].a);
 
-			image->setPixel(j, i, color);
+				image->setPixel(j + k, i, color);
+			}
 		}
 	}
 
@@ -155,22 +161,30 @@ screen_code screen_mix(screen_information *where_to, screen_information *where_f
 		return SCREEN_SEGMENT_FAULT;
 
 	for (size_t i = x_coordinate; i < where_from->height; i++)
-		for (size_t j = y_coordinate; j < where_from->width; j++)
+		for (size_t j = y_coordinate; j + 3 < where_from->width; j+= 4)
 		{
 			Color pixel = {0, 0, 0, 0};
 
-			Color front_pixel = where_from->data[i * where_from->width + j];
-			Color back_pixel = where_to->data[i * where_to->width + j];
+			Color front_pixels[4] = {};
+			for (int k = 0; k < 4; k++)
+				front_pixels[k] = where_from->data[i * where_from->width + j + k];
 
-			int transparency = (int)front_pixel.a;
+			Color back_pixels[4] = {};
+			for (int k = 0; k < 4; k++)
+				back_pixels[k] = where_to->data[i * where_to->width + j + k];
 
-			pixel.r = ((int)front_pixel.r * transparency + (int)back_pixel.r * ((int)color_maximum - transparency)) >> (int)8;
-			pixel.g = ((int)front_pixel.g * transparency + (int)back_pixel.g * ((int)color_maximum - transparency)) >> (int)8;
-			pixel.b = ((int)front_pixel.b * transparency + (int)back_pixel.b * ((int)color_maximum - transparency)) >> (int)8;
+			for (int k = 0; k < 4; k++)
+			{	
+				int transparency = (int)front_pixels[k].a;
 
-			pixel.a = color_maximum - 1;
+				pixel.r = ((int)front_pixels[k].r * transparency + (int)back_pixels[k].r * ((int)color_maximum - transparency)) >> (int)8;
+				pixel.g = ((int)front_pixels[k].g * transparency + (int)back_pixels[k].g * ((int)color_maximum - transparency)) >> (int)8;
+				pixel.b = ((int)front_pixels[k].b * transparency + (int)back_pixels[k].b * ((int)color_maximum - transparency)) >> (int)8;
 
-			where_to->data[i * where_to->width + j] = pixel;
+				pixel.a = color_maximum - 1;
+
+				where_to->data[i * where_to->width + j + k] = pixel;
+			}
 		}
 
 	return SCREEN_OK;
