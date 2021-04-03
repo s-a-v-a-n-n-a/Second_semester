@@ -1,5 +1,8 @@
 #include <SFML/Graphics.hpp>
+
 #include <emmintrin.h>
+#include <smmintrin.h>
+
 #include <ctime>
 
 const int color_maximum = 256;
@@ -56,7 +59,7 @@ screen_code draw_mixed_pictures(const char *file_name_to, const char *file_name_
 
 int main()
 {
-	screen_code report = draw_mixed_pictures("Table.bmp", "AskhatCat.bmp", 0, 0);
+	screen_code report = draw_mixed_pictures("Table.bmp", "AskhatCat.bmp", 400, 300);
 	printf("%s", screen_state_text[(int)report]);
 
     return 0;
@@ -157,34 +160,76 @@ screen_code screen_load(sf::Image *image, screen_information *screen)
 
 screen_code screen_mix(screen_information *where_to, screen_information *where_from, size_t x_coordinate, size_t y_coordinate)
 {
-	if (where_to->width < where_from->width || where_to->height < where_from->height)
+	if (where_to->width < where_from->width || where_to->height < where_from->height || x_coordinate < 0 || y_coordinate < 0)
+	{
 		return SCREEN_SEGMENT_FAULT;
+	}
+	if (x_coordinate >= where_to->width)
+		x_coordinate = where_to->width - x_coordinate;
+	if (y_coordinate >= where_to->height)
+		y_coordinate = where_to->height - y_coordinate;
 
-	for (size_t i = x_coordinate; i < where_from->height; i++)
-		for (size_t j = y_coordinate; j + 3 < where_from->width; j+= 4)
+	for (size_t i_front = 0, i_back = x_coordinate; i_front < where_from->height; i_front++, i_back++)
+		for (size_t j_front = 0, j_back = y_coordinate; j_front + 3 < where_from->width; j_front += 4, j_back += 4)
 		{
-			Color pixel = {0, 0, 0, 0};
+			//abcd
+			__m128i four_front_pixels = _mm_loadu_si128((__m128i*)(where_from->data + i_front * where_from->width + j_front));
+			//xywz
+			__m128i four_back_pixels  = _mm_loadu_si128((__m128i*)(where_to->data + i_back * where_to->width + j_back));
 
-			Color front_pixels[4] = {};
-			for (int k = 0; k < 4; k++)
-				front_pixels[k] = where_from->data[i * where_from->width + j + k];
+			//abab
+			__m128i two_front_upper_pixels = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(four_front_pixels), _mm_castsi128_ps(four_front_pixels)));
+			//0c0d
+			__m128i two_front_pixels_lower = _mm_cvtepu8_epi16(four_front_pixels);
+			//0a0b
+			__m128i two_front_pixels_upper = _mm_cvtepu8_epi16(two_front_upper_pixels);
 
-			Color back_pixels[4] = {};
-			for (int k = 0; k < 4; k++)
-				back_pixels[k] = where_to->data[i * where_to->width + j + k];
+			//xyxy
+			__m128i two_back_upper_pixels = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(four_back_pixels), _mm_castsi128_ps(four_back_pixels)));
+			//0w0z
+			__m128i two_back_pixels_lower = _mm_cvtepu8_epi16(four_back_pixels);
+			//0x0y
+			__m128i two_back_pixels_upper = _mm_cvtepu8_epi16(two_back_upper_pixels);
 
-			for (int k = 0; k < 4; k++)
-			{	
-				int transparency = (int)front_pixels[k].a;
+			__m128i mask_for_up_front_pixels  = _mm_set_epi8(-1, 12, -1, 12, -1, 12, -1, 12, -1, 8, -1, 8, -1, 8, -1, 8);
+			__m128i mask_for_low_front_pixels = _mm_set_epi8(-1, 4, -1, 4, -1, 4, -1, 4, -1, 0, -1, 0, -1, 0, -1, 0);
 
-				pixel.r = ((int)front_pixels[k].r * transparency + (int)back_pixels[k].r * ((int)color_maximum - transparency)) >> (int)8;
-				pixel.g = ((int)front_pixels[k].g * transparency + (int)back_pixels[k].g * ((int)color_maximum - transparency)) >> (int)8;
-				pixel.b = ((int)front_pixels[k].b * transparency + (int)back_pixels[k].b * ((int)color_maximum - transparency)) >> (int)8;
+			//0 a3 0 a3 0 a3 0 a3 0 a2 0 a2 0 a2 0 a2
+			__m128i two_upper_transparency = _mm_shuffle_epi8(four_front_pixels, mask_for_up_front_pixels);
+			//0 a1 0 a1 0 a1 0 a1 0 a0 0 a0 0 a0 0 a0
+			__m128i two_lower_transparency = _mm_shuffle_epi8(four_front_pixels, mask_for_low_front_pixels);
 
-				pixel.a = color_maximum - 1;
+			
 
-				where_to->data[i * where_to->width + j + k] = pixel;
-			}
+
+			__m128i two_upper_transparency_inversed = _mm_sub_epi16(_mm_set_epi16(256, 256, 256, 256,
+			 														  			  256, 256, 256, 256), two_upper_transparency);
+			__m128i two_lower_transparency_inversed = _mm_sub_epi16(_mm_set_epi16(256, 256, 256, 256,
+			 														  			  256, 256, 256, 256), two_lower_transparency);
+
+
+			two_front_pixels_lower = _mm_mullo_epi16(two_lower_transparency, two_front_pixels_lower);
+			two_front_pixels_upper = _mm_mullo_epi16(two_upper_transparency, two_front_pixels_upper);
+
+			two_back_pixels_lower = _mm_mullo_epi16(two_lower_transparency_inversed, two_back_pixels_lower);
+			two_back_pixels_upper = _mm_mullo_epi16(two_upper_transparency_inversed, two_back_pixels_upper);
+
+			two_front_pixels_lower = _mm_add_epi16(two_front_pixels_lower, two_back_pixels_lower);
+			two_front_pixels_upper = _mm_add_epi16(two_front_pixels_upper, two_back_pixels_upper);
+
+			
+			two_front_pixels_lower = _mm_srli_epi16(two_front_pixels_lower, 8);
+			two_front_pixels_upper = _mm_srli_epi16(two_front_pixels_upper, 8);
+
+
+			__m128i returning_back_mask = _mm_set_epi8(14, 12, 10, 8, 6, 4, 2, 0, -1, -1, -1, -1, -1, -1, -1, -1);
+
+			two_front_upper_pixels = _mm_shuffle_epi8(two_front_pixels_upper, returning_back_mask);
+			four_front_pixels = _mm_shuffle_epi8(two_front_pixels_lower, returning_back_mask);
+
+			
+			four_front_pixels = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(two_front_upper_pixels), _mm_castsi128_ps(four_front_pixels)));
+			_mm_storeu_si128((__m128i*)(where_to->data + i_back * where_to->width + j_back), four_front_pixels);
 		}
 
 	return SCREEN_OK;
