@@ -2,6 +2,7 @@
 
 #include <emmintrin.h>
 #include <smmintrin.h>
+#include <immintrin.h>
 
 #include <ctime>
 
@@ -57,9 +58,17 @@ void screen_picture_output(sf::Sprite sprite, const size_t width, const size_t h
 
 screen_code draw_mixed_pictures(const char *file_name_to, const char *file_name_from, size_t x_coordinate, size_t y_coordinate);
 
+inline __m128i sse_load_chars_from_array(unsigned char *array);
+inline __m128i sse_move_upper_in_two_positions(__m128i variable_upper, __m128i variable_lower);
+inline __m128i sse_dilute_lowers_with_zeroes(__m128i variable);
+inline __m128i sse_dilute_every_upper_forth_bytes(__m128i variable);
+inline __m128i sse_dilute_every_lower_forth_bytes(__m128i variable);
+inline __m128i sse_inverse_bytes(__m128i variable);
+inline __m128i sse_move_every_second_byte_in_one_variable(__m128i upper_values, __m128i lower_values);
+
 int main()
 {
-	screen_code report = draw_mixed_pictures("Table.bmp", "AskhatCat.bmp", 400, 300);
+	screen_code report = draw_mixed_pictures("Table.bmp", "AskhatCat.bmp", screen_width/2, screen_height/2);
 	printf("%s", screen_state_text[(int)report]);
 
     return 0;
@@ -158,6 +167,52 @@ screen_code screen_load(sf::Image *image, screen_information *screen)
 	return SCREEN_OK;
 }
 
+inline __m128i sse_load_chars_from_array(unsigned char *array)
+{
+	return _mm_loadu_si128((__m128i*)array);
+}
+inline __m128i sse_move_upper_in_two_positions(__m128i variable_upper, __m128i variable_lower)
+{
+	__m128 tmp_upper = _mm_castsi128_ps(variable_upper);
+	__m128 tmp_lower = _mm_castsi128_ps(variable_lower);
+
+	return _mm_castps_si128(_mm_movehl_ps(tmp_upper, tmp_lower));
+}
+
+inline __m128i sse_dilute_lowers_with_zeroes(__m128i variable)
+{
+	return _mm_cvtepu8_epi16(variable);
+}
+
+inline __m128i sse_dilute_every_upper_forth_bytes(__m128i variable)
+{
+	__m128i mask = _mm_set_epi8(-1, 12, -1, 12, -1, 12, -1, 12, -1, 8, -1, 8, -1, 8, -1, 8);
+
+	return _mm_shuffle_epi8(variable, mask);
+}
+
+inline __m128i sse_dilute_every_lower_forth_bytes(__m128i variable)
+{
+	__m128i mask = _mm_set_epi8(-1, 4, -1, 4, -1, 4, -1, 4, -1, 0, -1, 0, -1, 0, -1, 0);
+
+	return _mm_shuffle_epi8(variable, mask);
+}
+
+inline __m128i sse_inverse_bytes(__m128i variable)
+{
+	return _mm_sub_epi16(_mm_set_epi16(256, 256, 256, 256, 256, 256, 256, 256), variable);
+}
+
+inline __m128i sse_move_every_second_byte_in_one_variable(__m128i upper_values, __m128i lower_values)
+{
+	__m128i returning_back_mask = _mm_set_epi8(14, 12, 10, 8, 6, 4, 2, 0, -1, -1, -1, -1, -1, -1, -1, -1);
+
+	__m128i upper_tmp = _mm_shuffle_epi8(upper_values, returning_back_mask);
+	__m128i lower_tmp = _mm_shuffle_epi8(lower_values, returning_back_mask);
+
+	return sse_move_upper_in_two_positions(upper_tmp, lower_tmp);
+}
+
 screen_code screen_mix(screen_information *where_to, screen_information *where_from, size_t x_coordinate, size_t y_coordinate)
 {
 	if (where_to->width < where_from->width || where_to->height < where_from->height || x_coordinate < 0 || y_coordinate < 0)
@@ -172,40 +227,24 @@ screen_code screen_mix(screen_information *where_to, screen_information *where_f
 	for (size_t i_front = 0, i_back = x_coordinate; i_front < where_from->height; i_front++, i_back++)
 		for (size_t j_front = 0, j_back = y_coordinate; j_front + 3 < where_from->width; j_front += 4, j_back += 4)
 		{
-			//abcd
-			__m128i four_front_pixels = _mm_loadu_si128((__m128i*)(where_from->data + i_front * where_from->width + j_front));
-			//xywz
-			__m128i four_back_pixels  = _mm_loadu_si128((__m128i*)(where_to->data + i_back * where_to->width + j_back));
+			__m128i four_front_pixels = sse_load_chars_from_array((unsigned char*)(where_from->data + i_front * where_from->width + j_front));
+			__m128i four_back_pixels  = sse_load_chars_from_array((unsigned char*)(where_to->data + i_back * where_to->width + j_back));
 
-			//abab
-			__m128i two_front_upper_pixels = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(four_front_pixels), _mm_castsi128_ps(four_front_pixels)));
-			//0c0d
-			__m128i two_front_pixels_lower = _mm_cvtepu8_epi16(four_front_pixels);
-			//0a0b
-			__m128i two_front_pixels_upper = _mm_cvtepu8_epi16(two_front_upper_pixels);
+			__m128i two_front_upper_pixels = sse_move_upper_in_two_positions(four_front_pixels, four_front_pixels);
+			__m128i two_front_pixels_lower = sse_dilute_lowers_with_zeroes(four_front_pixels);
+			__m128i two_front_pixels_upper = sse_dilute_lowers_with_zeroes(two_front_upper_pixels);
 
-			//xyxy
-			__m128i two_back_upper_pixels = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(four_back_pixels), _mm_castsi128_ps(four_back_pixels)));
-			//0w0z
-			__m128i two_back_pixels_lower = _mm_cvtepu8_epi16(four_back_pixels);
-			//0x0y
-			__m128i two_back_pixels_upper = _mm_cvtepu8_epi16(two_back_upper_pixels);
-
-			__m128i mask_for_up_front_pixels  = _mm_set_epi8(-1, 12, -1, 12, -1, 12, -1, 12, -1, 8, -1, 8, -1, 8, -1, 8);
-			__m128i mask_for_low_front_pixels = _mm_set_epi8(-1, 4, -1, 4, -1, 4, -1, 4, -1, 0, -1, 0, -1, 0, -1, 0);
-
-			//0 a3 0 a3 0 a3 0 a3 0 a2 0 a2 0 a2 0 a2
-			__m128i two_upper_transparency = _mm_shuffle_epi8(four_front_pixels, mask_for_up_front_pixels);
-			//0 a1 0 a1 0 a1 0 a1 0 a0 0 a0 0 a0 0 a0
-			__m128i two_lower_transparency = _mm_shuffle_epi8(four_front_pixels, mask_for_low_front_pixels);
+			__m128i two_back_upper_pixels = sse_move_upper_in_two_positions(four_back_pixels, four_back_pixels);
+			__m128i two_back_pixels_lower = sse_dilute_lowers_with_zeroes(four_back_pixels);
+			__m128i two_back_pixels_upper = sse_dilute_lowers_with_zeroes(two_back_upper_pixels);
 
 			
+			__m128i two_upper_transparency = sse_dilute_every_upper_forth_bytes(four_front_pixels);
+			__m128i two_lower_transparency = sse_dilute_every_lower_forth_bytes(four_front_pixels);
 
 
-			__m128i two_upper_transparency_inversed = _mm_sub_epi16(_mm_set_epi16(256, 256, 256, 256,
-			 														  			  256, 256, 256, 256), two_upper_transparency);
-			__m128i two_lower_transparency_inversed = _mm_sub_epi16(_mm_set_epi16(256, 256, 256, 256,
-			 														  			  256, 256, 256, 256), two_lower_transparency);
+			__m128i two_upper_transparency_inversed = sse_inverse_bytes(two_upper_transparency);
+			__m128i two_lower_transparency_inversed = sse_inverse_bytes(two_lower_transparency);
 
 
 			two_front_pixels_lower = _mm_mullo_epi16(two_lower_transparency, two_front_pixels_lower);
@@ -222,13 +261,7 @@ screen_code screen_mix(screen_information *where_to, screen_information *where_f
 			two_front_pixels_upper = _mm_srli_epi16(two_front_pixels_upper, 8);
 
 
-			__m128i returning_back_mask = _mm_set_epi8(14, 12, 10, 8, 6, 4, 2, 0, -1, -1, -1, -1, -1, -1, -1, -1);
-
-			two_front_upper_pixels = _mm_shuffle_epi8(two_front_pixels_upper, returning_back_mask);
-			four_front_pixels = _mm_shuffle_epi8(two_front_pixels_lower, returning_back_mask);
-
-			
-			four_front_pixels = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(two_front_upper_pixels), _mm_castsi128_ps(four_front_pixels)));
+			four_front_pixels = sse_move_every_second_byte_in_one_variable(two_front_pixels_upper, two_front_pixels_lower);
 			_mm_storeu_si128((__m128i*)(where_to->data + i_back * where_to->width + j_back), four_front_pixels);
 		}
 
