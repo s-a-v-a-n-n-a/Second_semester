@@ -1,0 +1,116 @@
+digraph list
+{
+  rankdir = LR;
+  nod0[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "BlueViolet" rowspan = "3">0</td>
+      <td bgcolor =  "CornflowerBlue" port = "n0">4</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "CornflowerBlue">nan</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "CornflowerBlue" port = "p0">7</td>
+      </tr>
+      </table>>];
+  nod4[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "HotPink" rowspan = "3">4</td>
+      <td bgcolor =  "#FEC9E3" port = "n4">3</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3">13</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3" port = "p4">0</td>
+      </tr>
+      </table>>];
+  nod3[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "DarkSlateGray" rowspan = "3">3</td>
+      <td bgcolor =  "DimGray" port = "n3">2</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "DimGray">12</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "DimGray" port = "p3">4</td>
+      </tr>
+      </table>>];
+  nod2[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "DarkSlateGray" rowspan = "3">2</td>
+      <td bgcolor =  "DimGray" port = "n2">5</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "DimGray">11</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "DimGray" port = "p2">0</td>
+      </tr>
+      </table>>];
+  nod5[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "HotPink" rowspan = "3">5</td>
+      <td bgcolor =  "#FEC9E3" port = "n5">6</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3">14</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3" port = "p5">2</td>
+      </tr>
+      </table>>];
+  nod6[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "HotPink" rowspan = "3">6</td>
+      <td bgcolor =  "#FEC9E3" port = "n6">1</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3">15</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3" port = "p6">5</td>
+      </tr>
+      </table>>];
+  nod1[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "HotPink" rowspan = "3">1</td>
+      <td bgcolor =  "#FEC9E3" port = "n1">7</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3">10</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3" port = "p1">6</td>
+      </tr>
+      </table>>];
+  nod7[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "HotPink" rowspan = "3">7</td>
+      <td bgcolor =  "#FEC9E3" port = "n7">0</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3">16</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "#FEC9E3" port = "p7">1</td>
+      </tr>
+      </table>>];
+  nod0->nod4->nod3->nod2->nod5->nod6->nod1->nod7->nod0[color = "Black"];
+  nod0:n0->nod4:n4->nod3:n3->nod2:n2->nod5:n5->nod6:n6->nod1:n1->nod7:n7->nod0:n0[color="Crimson", arrowsize = "1"];
+  nod0:p0->nod7:p7->nod1:p1->nod6:p6->nod5:p5->nod2:p2->nod0:p0->nod7:p7->nod1:p1[color="DarkMagenta", arrowsize = "1"];
+  nod8[shape="none"       label = <<table border = "0" cellborder = "1" cellspacing = "0">
+   <tr>
+      <td bgcolor = "Grey" rowspan = "3">8</td>
+      <td bgcolor =  "LightGray" port = "n8">9</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "LightGray">nan</td>
+      </tr>
+      <tr>
+      <td bgcolor =  "LightGray" port = "p8">7</td>
+      </tr>
+      </table>>];
+  nod7->nod8->nod8[color = "Black"];
+}

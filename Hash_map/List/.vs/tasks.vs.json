@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "задача-TestingMyList",
+      "appliesTo": "TestingMyList.cpp",
+      "type": "launch"
+    }
+  ]
+}
