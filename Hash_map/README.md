@@ -95,6 +95,10 @@ Final calculations for optimization flag -O1 are 1.41 and 49.
 -----------
 The counted acceleration factor is 44, therefore the total coefficient is 1.27. Boost after using crc-32 hash is 49. 
 
+The acceleration of the functions is clearly shown on the bar graph (***Picture 5***).
+
+![Picture 5](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%205.jpg)
+
 **CONCLUSION**
 --------------
 After this investigation we can infer that extended assembly and calling assembly function bossts the program due to direct access to registers and own understanding of guaranteed values.
