@@ -102,8 +102,14 @@ After this investigation we can infer that extended assembly and calling assembl
 **LITERATURE AND LINKS**
 ------------------------
 <li> 
-	* [Author's github page](https://github.com/s-a-v-a-n-n-a/Second_semester/tree/main/Hash_map)
-	* ["Computer systems" by Bryant O'Hallaron](http://guanzhou.pub/files/Computer%20System_EN.pdf)
-	* [Documantation for using extended assembly](https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html)
-	* [Intel website with intrinsics](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#expand=1606,3853,1606,3990,3990,5117,5495,5480,5421,5417,5477,5507,3853,5653,3343,3828,3828,627,1781,1606,5706,4913,3343,257,3343,3853,1606,5706,5507,4903,3295,3416,606,3344,3859,5200,5144,5153,5153,4173,5663,3853,1606,3863,3993,5653,5655,5156,3859,3840,3853,1609,5156,1523,2457,4118,2940,2961,3536,571,3344,3296,4914,4907,774,782,774,790,892,3344,3418,5663,6190,790,766,790,766,339,3898,1609,1523,5945,5945,4950,4969,339,88,115,339,5939,5909,5945,5909,3418,3557,3547,3418,5909,790,916,3865,3418,6171,766,766,5023,5023,782,5023,6171,301,339,339,766,766,774,790,3865,301,339,301,3865,3344,3418,5597,5655,3418,3323,3865,1287,3418,782,3865&techs=SSE4_1,SSE4_2,AVX,AVX2)
+[Author's github page](https://github.com/s-a-v-a-n-n-a/Second_semester/tree/main/Hash_map)
+</li>
+<li>
+["Computer systems" by Bryant O'Hallaron](http://guanzhou.pub/files/Computer%20System_EN.pdf)
+</li>
+<li>
+[Documantation for using extended assembly](https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html)
+</li>
+<li>
+[Intel website with intrinsics](https://software.intel.com/sites/landingpage/IntrinsicsGuide/#expand=1606,3853,1606,3990,3990,5117,5495,5480,5421,5417,5477,5507,3853,5653,3343,3828,3828,627,1781,1606,5706,4913,3343,257,3343,3853,1606,5706,5507,4903,3295,3416,606,3344,3859,5200,5144,5153,5153,4173,5663,3853,1606,3863,3993,5653,5655,5156,3859,3840,3853,1609,5156,1523,2457,4118,2940,2961,3536,571,3344,3296,4914,4907,774,782,774,790,892,3344,3418,5663,6190,790,766,790,766,339,3898,1609,1523,5945,5945,4950,4969,339,88,115,339,5939,5909,5945,5909,3418,3557,3547,3418,5909,790,916,3865,3418,6171,766,766,5023,5023,782,5023,6171,301,339,339,766,766,774,790,3865,301,339,301,3865,3344,3418,5597,5655,3418,3323,3865,1287,3418,782,3865&techs=SSE4_1,SSE4_2,AVX,AVX2)
 </li>
