@@ -59,7 +59,7 @@ Total usage of assembly lines is 29.
 ### ***THE THIRD STEP***
 Comparing of two programs. We launch kcachegrind with two generated callgrind files and see the results shown in the ***Picture 2.3***. 
 
-<img src="Investigation/Picture%202.3.jpg" alt="Picture 2.3" width="600">
+<img src="Investigation/Picture%202.3.png" alt="Picture 2.3" width="600">
 ***Picture 2.3***
 
 Putting the data in the formula (1) we gain the acceleration factor 1.25.
@@ -67,26 +67,26 @@ Calculating with formula (2) the total result is 43.
 
 The calculations for optimization flag -O1 are 1.27 and 44. They are shown in the ***Picture 2.4***
 
-<img src="Investigation/Picture%202.4.jpg" alt="Picture 2.4" width="600">
+<img src="Investigation/Picture%202.4.png" alt="Picture 2.4" width="600">
 ***Picture 2.4***
 
 ### ***THE FORTH STEP: ADDITIONAL***
 
 The author could not refuse the opportunity to boost the program by using better hashing algorithm. Crc32 with polinom 0x04C11DB7 was used. Counted with intrinsic crc32_u32 it showed boost as ? (formule(1)). ***Picture 4.1*** shows duration of hash_get function working and ***Picture 4.2*** shows the duration of hash_crc_intrinsic. 
 
-<img src="Investigation/Picture%204.1.jpg" alt="Picture 4.1" width="600">
+<img src="Investigation/Picture%204.1.png" alt="Picture 4.1" width="600">
 ***Picture 4.1***
-<img src="Investigation/Picture%204.2.jpg" alt="Picture 4.2" width="600">
+<img src="Investigation/Picture%204.2.png" alt="Picture 4.2" width="600">
 ***Picture 4.2***
 
 Comparison with last fast version is shown in the ***Picture 4.3***
 
-<img src="Investigation/Picture%204.3.jpg" alt="Picture 4.3" width="600">
+<img src="Investigation/Picture%204.3.png" alt="Picture 4.3" width="600">
 ***Picture 4.3***
 
 Comparison with slow version (***Picture 4.4***):
 
-<img src="Investigation/Picture%204.4.jpg" alt="Picture 4.4" width="600">
+<img src="Investigation/Picture%204.4.png" alt="Picture 4.4" width="600">
 ***Picture 4.4***
 
 Final calculations for optimization flag -O1 are 1.41 and 49.
