@@ -37,21 +37,21 @@ Writing the hashmap interface. The functions were hash_get(getting the hash of t
 Profiling by the category "self" showed that the most used functions were strcmp (its part by avx) and hash_find_element.
 
 <img src="Investigation/Picture%201.jpg" alt="Picture 1" width="600">
-Picture 1
+***Picture 1***
 
 ### ***THE SECOND STEP***
 
 As strcmp function uses avx registers, we needed to make the comparing much easier. That is why it was decided to fix the size of key word as 32, as 32 bytes is the size of the avx register. However the author decided not to change the type of the list data into char[64], limited herself to check the minimum size and leaving it to the user due to the meaning can be longer that 32 letters. Even if we do the change compiler would not know about this feature and modify string comparing. The ***Picture 2.1*** shows the rewritten on assembly (nasm) function of comparing two strings.
 
-![Picture 2.1](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%202.1.jpg)
-Picture 2.1
+<img src="Investigation/Picture%202.1.jpg" alt="Picture 2.1" width="600">
+***Picture 2.1***
 
 Usage of assembly lines is 7.
 
 At the second part it was decided to rewrite finding element in the list cycle by extended assembly. Using flag -masm=intel the author provided herself an opportunity to write it using intel syntax. The idea of boosting is in using calee-saving registers to avoid the excessive amount of pushes into the stack. Looking ahead we can observe that rewritten string comparing function does not need any pushes. Thus we work only with registers that even a little boost the program.
 
-![Picture 2.2](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%202.2.jpg)
-Picture 2.2
+<img src="Investigation/Picture%202.2.jpg" alt="Picture 2.2" width="600">
+***Picture 2.2***
 
 Usage of assembly lines is 22.
 Total usage of assembly lines is 29. 
@@ -59,35 +59,35 @@ Total usage of assembly lines is 29.
 ### ***THE THIRD STEP***
 Comparing of two programs. We launch kcachegrind with two generated callgrind files and see the results shown in the ***Picture 2.3***. 
 
-![Picture 2.3](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%202.3.png)
-Picture 2.3
+<img src="Investigation/Picture%202.3.jpg" alt="Picture 2.3" width="600">
+***Picture 2.3***
 
 Putting the data in the formula (1) we gain the acceleration factor 1.25.
 Calculating with formula (2) the total result is 43.
 
 The calculations for optimization flag -O1 are 1.27 and 44. They are shown in the ***Picture 2.4***
 
-![Picture 2.4](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%202.4.png)
-Picture 2.4
+<img src="Investigation/Picture%202.4.jpg" alt="Picture 2.4" width="600">
+***Picture 2.4***
 
 ### ***THE FORTH STEP: ADDITIONAL***
 
 The author could not refuse the opportunity to boost the program by using better hashing algorithm. Crc32 with polinom 0x04C11DB7 was used. Counted with intrinsic crc32_u32 it showed boost as ? (formule(1)). ***Picture 4.1*** shows duration of hash_get function working and ***Picture 4.2*** shows the duration of hash_crc_intrinsic. 
 
-![Picture 4.1](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%204.1.png)
-Picture 4.1
-![Picture 4.2](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%204.2.png) 
-Picture 4.2
+<img src="Investigation/Picture%204.1.jpg" alt="Picture 4.1" width="600">
+***Picture 4.1***
+<img src="Investigation/Picture%204.2.jpg" alt="Picture 4.2" width="600">
+***Picture 4.2***
 
 Comparison with last fast version is shown in the ***Picture 4.3***
 
-![Picture 4.3](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%204.3.png)
-Picture 4.3
+<img src="Investigation/Picture%204.3.jpg" alt="Picture 4.3" width="600">
+***Picture 4.3***
 
 Comparison with slow version (***Picture 4.4***):
 
-![Picture 4.4](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%204.4.png)
-Picture 4.4
+<img src="Investigation/Picture%204.4.jpg" alt="Picture 4.4" width="600">
+***Picture 4.4***
 
 Final calculations for optimization flag -O1 are 1.41 and 49.
 
@@ -97,7 +97,8 @@ The counted acceleration factor is 44, therefore the total coefficient is 1.27. 
 
 The acceleration of the functions is clearly shown on the bar graph (***Picture 5***).
 
-![Picture 5](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%205.jpg)
+<img src="Investigation/Picture%205.jpg" alt="Picture 5" width="600">
+***Picture 5***
 
 **CONCLUSION**
 --------------
