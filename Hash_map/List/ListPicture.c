@@ -1,6 +1,6 @@
 #include "ListPicture.h"
 
-void list_call(const char *name_file, const char *new_name)
+static void list_call(const char *name_file, const char *new_name)
 {
     char temp[512];
     sprintf(temp, "dot %s -T%s -O", name_file, new_name);
@@ -37,7 +37,7 @@ void print_sequence(FILE *picture, List *that_list, const char state, const char
 void print_boxes(FILE *picture, List *that_list, size_t start, size_t end, size_t index, size_t last)
 {
     for (size_t i = start; i < end; i++)
-    {
+    {//#define SLOW_PRINT
         fprintf(picture, "nod%lu->", index);
 
         index = that_list->next[index];

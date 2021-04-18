@@ -5,6 +5,8 @@
 typedef char* list_elem_type;
 #define neutral NULL
 
+const int  MAX_STRING_LENGTH		= 32;
+
 const int  MAX_PICTURE_NAME         = 255;
 
 const char PICTURE_FILE_CODE[]      = "picture";

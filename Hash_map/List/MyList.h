@@ -19,10 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <wchar.h>
-#include <locale.h>
-
 #include "AllSettings.h"
+
+//#define VERIFICATIONS
 
 typedef struct The_list
 {

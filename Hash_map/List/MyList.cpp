@@ -158,11 +158,17 @@ list_code list_resize(List *that_list, const double coefficient)
     return LIST_OK;
 }
 
+
+//----------------------------------------------------------------------------------------------------
 list_code list_insert(List *that_list, const size_t before_physical_index, const list_elem_type value)
 {
+    #ifdef VERIFICATIONS
     list_code request = list_request_verifier(that_list, INSERTION, before_physical_index);
     if (request != LIST_OK)
         return request;
+    #else
+    list_code reques = LIST_OK;
+    #endif
 
     if (that_list->length + 1 >= that_list->capacity)
     {
@@ -176,8 +182,16 @@ list_code list_insert(List *that_list, const size_t before_physical_index, const
 
     //new
     size_t value_length = strlen(value);
-    char *copy_value = (char*)calloc(value_length + 1, sizeof(char));
-    memcpy(copy_value, value, value_length * sizeof(char));
+    char *copy_value = NULL;
+    if (value_length < MAX_STRING_LENGTH)
+    {
+        copy_value = (char*)calloc(32, sizeof(char));
+    }
+    else
+        copy_value = (char*)calloc(value_length + 1, sizeof(char));
+
+    
+    strcpy(copy_value, value);
 
     that_list->data[tmp_free] = copy_value;
     //new
@@ -192,6 +206,8 @@ list_code list_insert(List *that_list, const size_t before_physical_index, const
 
     return LIST_OK;
 }
+//------------------------------------------------------------------------------------------------------
+
 
 list_code list_insert_front(List *that_list, const list_elem_type value)
 {
@@ -256,9 +272,13 @@ list_code list_find_index(List *that_list, const size_t logical_index, size_t *p
 
 list_code list_get_element(List *that_list, const size_t physical_index, list_elem_type *requested_element)
 {
+    #ifdef VERIFICATIONS
     list_code request = list_request_verifier(that_list, GETTING, physical_index);
     if (request != LIST_OK)
         return request;
+    #else
+    list_code reques = LIST_OK;
+    #endif
 
     if (that_list->sorted)
     {
@@ -470,9 +490,9 @@ list_code list_verifier(List *that_list, const list_functions function)
 
     size_t index = that_list->next[0];
 
-    for (size_t i = 0; i < that_list->length; i++)
+    for (size_t i = 0; i <= that_list->length; i++)
     {
-        if (index != that_list->prev[that_list->next[index]] && i < that_list->length - 1)
+        if (index != that_list->prev[that_list->next[index]] && i < that_list->length)
         {
             ASSERTION(LIST_CONNECT_ERROR);
             list_print_list_appearance(that_list, LIST_CONNECT_ERROR, function);

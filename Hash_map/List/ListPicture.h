@@ -6,7 +6,7 @@ Calls the dot-program to make the picture by graphviz
 @param[in]       name_file                 The name of file to make a picture from
 @param[in]       new_name                  The format of the picture
 */
-void             list_call                 (const char *name_file, const char *new_name);
+static void      list_call                 (const char *name_file, const char *new_name);
 /*!
 Outputs the information about the adding nodes of the list
 @param[in]       picture                   The file to print code for graphviz into

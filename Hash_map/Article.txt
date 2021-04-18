@@ -1,0 +1,92 @@
+Investigation
+Authors
+
+Annotation
+
+Introduction
+
+-field of investigation
+Programming, working with data
+-the essence of the problem
+In some places compiler does not know about possible boost, but this knowledge is available for a programmer who can gain the point by different restrictions. 
+-aim of the investigation
+To boost the hash map by rewriting two functions on assembler in two different ways on flag -O1 and -O0.
+-value of the investigation
+There is a dependence of the correct operation of databases on the speed of work with them.
+
+
+Work progress (Experimental section)
+-Materials and methods
+Restrictions:
+Profiler:
+Hashing algorithm:
+Formulas to calculate:
+(Formula to count the boost)
+(Formula that uses the amount of assembly lines)
+
+-Steps of the investigation
+First step: writing a hashmap interface and realization
+Second step: looking at profiler and find two functions that take the most time
+As can be seen in the following picture (!!!) strcmp used approximately 20% of time and hash_find_element, which is used to understand if the word attends the table - 17% of time itself.
+Third step: to rewrite hash_find_element by Extended Asm. Result showed the boost of 5%.
+Forth step: to rewrite strcmp by avx-registers and fixing the length of key word. The amount 32 of letters was chosen as it is the exact size of an avx registers. Total boost is about 20%.
+Fourth step: acquaintance with crc32 algorothm.????
+
+
+Results
+
+Discussion
+
+Conclusions
+
+Literature
+Brayan O'Hallaron
+https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
+https://ru.wikipedia.org/wiki/%D0%A6%D0%B8%D0%BA%D0%BB%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_%D0%B8%D0%B7%D0%B1%D1%8B%D1%82%D0%BE%D1%87%D0%BD%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B4#%D0%9C%D0%B0%D1%82%D0%B5%D0%BC%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%BE%D0%B5_%D0%BE%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5
+https://ru.wihttps://ru.wikibooks.org/wiki/%D0%A0%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D0%B8_%D0%B0%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC%D0%BE%D0%B2/%D0%A6%D0%B8%D0%BA%D0%BB%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_%D0%B8%D0%B7%D0%B1%D1%8B%D1%82%D0%BE%D1%87%D0%BD%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B4kibooks.org/wiki/%D0%A0%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D0%B8_%D0%B0%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC%D0%BE%D0%B2/%D0%A6%D0%B8%D0%BA%D0%BB%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_%D0%B8%D0%B7%D0%B1%D1%8B%D1%82%D0%BE%D1%87%D0%BD%D1%8B%D0%B9_%D0%BA%D0%BE%D0%B4
+https://github.com/s-a-v-a-n-n-a/Second_semester/tree/main/Hash_map
+
+
+// char *small_word = (char*)calloc(MAX_STRING_LENGTH, sizeof(char));
+	// strcpy(small_word, "accept");
+
+	// // for (int i = 0; i < 32; i++)
+	// // {
+	// // 	printf("%d ", small_word[i]);
+	// // }
+	// // printf("\n");
+
+	// long long hash = 0;
+	// #ifndef CRC_HASH
+	// 		hash_get(key, hash_table->capacity);
+	// 		#else
+	// 		crc_32_wrapper(key, hash_table->capacity);
+	// 		#endif
+	// long long index = hash_find_element(table->table + hash, small_word);
+	// // printf("%s\n", small_word);
+
+	// //printf("%s\n", table->table[hash].data[2]);
+
+	// if (index != -1)
+	// 	printf("%s", table->meaning[hash].data[index]);
+	// 	//printf("%lld\n", index);
+	// else
+	// 	printf("No match\n");
+
+	// strcpy(small_word, "barabarabara");
+
+
+	// #ifndef ASM_FUNC 
+	// #ifndef CRC_HASH
+	// 		hash_get(key, hash_table->capacity);
+	// 		#else
+	// 		crc_32_wrapper(key, hash_table->capacity);
+	// 		#endif
+	// index = hash_find_element(table->table + hash, small_word);
+	// // printf("%s\n", small_word);
+
+	// if (index != -1)
+	// 	printf("%s", table->meaning[hash].data[index]);
+	// 	//printf("%lld\n", index);
+	// else
+	// 	printf("No match\n");
