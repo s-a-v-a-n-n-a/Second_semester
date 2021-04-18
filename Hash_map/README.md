@@ -13,20 +13,20 @@ These optimization can be useful in the field of working with data as there is a
 
 **WORK PROGRESS**
 -----------------
-###***MATERIALS***
+### ***MATERIALS***
 
 In this particular case hashmap will contain key words and meanings so it seems to be a dictionary.
 The program was written with using fast [list structure](https://github.com/s-a-v-a-n-n-a/My-List) that was written by the author earlier.
 For measuring duration of the work of function profiler callgrind was used with the application kcachegrind.
 Work was done on the Ubuntu 20.04.2 with the processor intel core i7.
 
-###***RESTRICTIONS***
+### ***RESTRICTIONS***
 
 For easier work with hashtable it was decided to use ony insert at back of the list function as it provides direct access to tha data. Thus in addition function of deleting elements was replaced.
 Lately fixing the size of the key was used.
 Measurint the time of program working also included the fact that the major of time user finds words and the most of the inserts are made at the beginning of the program, when the dictionary is loaded.
 
-###***FORMULAS FOR CALCULATING THE BOOST***
+### ***FORMULAS FOR CALCULATING THE BOOST***
 
 Using profiler and comparing two results the coefficient of the boost we will calculate is (second result - first result)/(first result). (1)
 To calculate the total boost the formula we wil use (the coefficient of the boost/amount of the lines on assembly) * 1000. (2)
@@ -39,7 +39,7 @@ Profiling by the category "self" showed that the most used functions were strcmp
 ![Picture 1](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%201.jpg)
 Picture 1
 
-###***THE SECOND STEP***
+### ***THE SECOND STEP***
 
 As strcmp function uses avx registers, we needed to make the comparing much easier. That is why it was decided to fix the size of key word as 32, as 32 bytes is the size of the avx register. However the author decided not to change the type of the list data into char[64], limited herself to check the minimum size and leaving it to the user due to the meaning can be longer that 32 letters. Even if we do the change compiler would not know about this feature and modify string comparing. The ***Picture 2.1*** shows the rewritten on assembly (nasm) function of comparing two strings.
 
@@ -56,7 +56,7 @@ Picture 2.2
 Usage of assembly lines is 22.
 Total usage of assembly lines is 29. 
 
-###***THE THIRD STEP***
+### ***THE THIRD STEP***
 Comparing of two programs. We launch kcachegrind with two generated callgrind files and see the results shown in the ***Picture 2.3***. 
 
 ![Picture 2.3](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%202.3.png)
@@ -70,7 +70,7 @@ The calculations for optimization flag -O1 are 1.27 and 44. They are shown in th
 ![Picture 2.4](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%202.4.png)
 Picture 2.4
 
-###***THE FORTH STEP: ADDITIONAL***
+### ***THE FORTH STEP: ADDITIONAL***
 
 The author could not refuse the opportunity to boost the program by using better hashing algorithm. Crc32 with polinom 0x04C11DB7 was used. Counted with intrinsic crc32_u32 it showed boost as ? (formule(1)). ***Picture 4.1*** shows duration of hash_get function working and ***Picture 4.2*** shows the duration of hash_crc_intrinsic. 
 
