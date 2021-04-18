@@ -36,7 +36,7 @@ Writing the hashmap interface. The functions were hash_get(getting the hash of t
 
 Profiling by the category "self" showed that the most used functions were strcmp (its part by avx) and hash_find_element.
 
-![Picture 1](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/Investigation/Picture%201.jpg)
+<img src="Investigation/Picture%201.jpg" alt="Picture 1" width="600">
 Picture 1
 
 ### ***THE SECOND STEP***
