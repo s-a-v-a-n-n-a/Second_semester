@@ -74,7 +74,7 @@ The calculations for optimization flag -O1 are 1.27 and 44. They are shown in th
 
 ### ***THE FORTH STEP: ADDITIONAL***
 
-The author could not refuse the opportunity to boost the program by using better hashing algorithm. Crc32 with polinom 0x04C11DB7 was used. Counted with intrinsic crc32_u32 it showed boost as ? (formule(1)). ***Picture 4.1*** shows duration of hash_get function working and ***Picture 4.2*** shows the duration of hash_crc_intrinsic. 
+The author could not refuse the opportunity to boost the program by using better hashing algorithm. Crc32 with polinom 0x04C11DB7 was used. Counted with intrinsic crc32_u32 it showed boost that equals 1.41 (formula(1)). ***Picture 4.1*** shows duration of hash_get function working and ***Picture 4.2*** shows the duration of hash_crc_intrinsic. 
 
 <img src="Investigation/Picture%204.1.png" alt="Picture 4.1" width="600">
 ***Picture 4.1***
@@ -110,9 +110,6 @@ After this investigation we can infer that extended assembly and calling assembl
 ------------------------
 <li> 
 [Author's github page](https://github.com/s-a-v-a-n-n-a/Second_semester/tree/main/Hash_map)
-</li>
-<li>
-["Computer systems" by Bryant O'Hallaron](http://guanzhou.pub/files/Computer%20System_EN.pdf)
 </li>
 <li>
 [Documantation for using extended assembly](https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html)
