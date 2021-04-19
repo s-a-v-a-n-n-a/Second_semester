@@ -8,19 +8,21 @@
     fprintf(stderr, "IN FILE %s\nIN LINE %d\n", __FILE__, __LINE__);     \
     fprintf(stderr, "WORD IS SHORTENED")
 
-const float load_factor 	= 0.75;
-const int   letters_amount 	= 26;
-const int   polynom 		= 0x04C11DB7;
+const char	DIVIDER				 = ':';
 
-const size_t hash_map_size     = 100;
-const size_t hash_chain_length = 1000;
+const float LOAD_FACTOR 	     = 0.75;
+const int   LETTERS_AMOUNT 	     = 26;
+const int   POLYNOM 		     = 0x04C11DB7;
 
-const size_t max_word_size       = 1000;
-const size_t max_definition_size = 1000;
+const size_t HASH_MAP_SIZE       = 100;
+const size_t HASH_CHAIN_LENGTH   = 1000;
 
-const size_t amount_of_tests = 10000;
+const size_t MAX_WORD_SIZE       = 1000;
+const size_t MAX_DEFINITION_SIZE = 1000;
 
-const size_t words_to_load = 300;
+const size_t AMOUNT_OF_TESTS     = 10000;
+
+const size_t WORDS_TO_LOAD       = 300;
 
 
 Hash_map *hash_new(size_t lists_amount, size_t chain_length)
@@ -170,7 +172,7 @@ hashmap_code hash_add_element(Hash_map *map, char *word, char *meaning)
 	if (!map || !word || !meaning)
 		return HASHMAP_NULL;
 
-	if (hash_load_factor(map) > load_factor)
+	if (hash_load_factor(map) > LOAD_FACTOR)
 	{
 		if(hash_resize_and_rehash(map) != HASHMAP_OK)
 			return HASHMAP_CANNOT_INSERT;
@@ -285,7 +287,7 @@ size_t hash_crc_intrinsic(const char *string, size_t field_size)
 	{
 		unsigned index = i * 4;
 		unsigned number = (((((string[index] << iterations_amount) + string[index + 1]) << iterations_amount) + string[index + 2]) << iterations_amount) + string[index + 3];
-		hash += _mm_crc32_u32(polynom, number);
+		hash += _mm_crc32_u32(POLYNOM, number);
 	}
 
 	return hash % field_size;
@@ -294,7 +296,7 @@ size_t hash_crc_intrinsic(const char *string, size_t field_size)
 void test_hash_map()
 {
 	Text *dictionary = text_new("./dict/dict.txt");
-	Hash_map *hash_table = hash_new(hash_map_size, hash_chain_length);
+	Hash_map *hash_table = hash_new(HASH_MAP_SIZE, HASH_CHAIN_LENGTH);
 	if (put_in_hash_map(hash_table, dictionary))
 		find_test(hash_table);
 
@@ -304,14 +306,14 @@ void test_hash_map()
 
 void find_test(Hash_map *map)
 {
-	for (size_t i = 0; i < amount_of_tests; i++)
+	for (size_t i = 0; i < AMOUNT_OF_TESTS; i++)
 	{
 		size_t small_length = rand() % MAX_STRING_LENGTH;
 		char *small_word = (char*)calloc(MAX_STRING_LENGTH, sizeof(char));
 
 		for (size_t j = 0; j < small_length; j++)
 		{
-			small_word[j] = 'a' + rand() % letters_amount;
+			small_word[j] = 'a' + rand() % LETTERS_AMOUNT;
 		}
 
 		long long hash = 0;
@@ -381,7 +383,7 @@ char *extract_definition(Ptrs_t line)
 	size_t index             = 0;
 	for (index = 0; index < line_length; index++)
 	{
-		if (line_string[index] == ':')
+		if (line_string[index] == DIVIDER)
 			break;
 		else
 			key_length++;
