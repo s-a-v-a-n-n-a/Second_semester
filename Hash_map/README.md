@@ -7,8 +7,10 @@ Research was conducted by a first year student at MIPT Anna Savchuk in 2021.
 **INTRODUCTION**
 ----------------
 In field of working with data using of hashmaps is widely spread. Hashmap is a structure that provides an opportunity of inserting, finding and deleting information for the O(1) of time. One of the types of hashamps is the one with chaining. It is considered that data with the same hash are storing in the same chain.
+
 However such hashmap is not fast enough. Even optimized by compiler, we do not gain expected result. That happens due to parts of the algorithm that are not clear for optimizer. Contrariwise this knowledge is available for a programmer, who can achieve the boost by different restrictions.  
-Here we come up with the idea to boost the work of program by rewriting two functions on assembler in two different ways on flag -O0 and -O1.
+
+Here we come up with the idea to boost the work of program by rewriting two functions on assembler in two different ways on flag `-O0` and `-O1`.
 These optimization can be useful in data manipulation as there is a dependence of the correct operation of databases on the speed of work with them.
 
 **WORK PROGRESS**
@@ -22,13 +24,15 @@ Work was done on the Ubuntu 20.04.2 with the processor intel core i7.
 
 ### ***RESTRICTIONS***
 
-For easier work with hashtable it was decided to use ony insertion at back functionas it provides direct access to the data. Thus in addition function of deleting elements was replaced.
-Lately fixing the size of the key was used.
+For easier work with hashtable it was decided to use any insertion at back functionas it provides direct access to the data. Thus in addition function of deleting elements was replaced.
+
+Lately, fixing the size of the key was used.
+
 Measuring the time of program working also included the fact that the major of time user finds words and the most of the inserts are made at the beginning of the program, when the dictionary is loaded.
 
 ### ***FORMULAS FOR CALCULATING THE BOOST***
 
-Using profiler and comparing two results the coefficient of the boost we will calculate is (second result - first result)/(first result). (1)
+Using profiler and comparing two results the coefficient of the boost we will calculate is a2/a1 (1), where a1 is the first result and a2 is the second result.
 
 To calculate the total boost the formula we wil use (the coefficient of the boost/amount of the lines on assembly) * 1000. (2)
 
@@ -43,19 +47,20 @@ Profiling by the category "self" showed that the most used functions were strcmp
 
 ### ***THE SECOND STEP***
 
-As strcmp function uses avx registers, we needed to make the comparing much easier. That is why it was decided to fix the size of key word as 32, as 32 bytes is the size of the avx register. However the author decided not to change the type of the list data into char[64], limited herself to check the minimum size and leaving it to the user due to the meaning can be longer that 32 letters. Even if we do the change compiler would not know about this feature and modify string comparing. The ***Picture 2.1*** shows the rewritten on assembly (nasm) function of comparing two strings.
+As strcmp function uses avx registers, we needed to make the comparing much easier. That is why it was decided to fix the size of key word as 32, as 32 bytes is the size of the avx register. However the author decided not to change the type of the list data into char[32], limited herself to check the minimum size and leaving it to the user due to the meaning can be longer that 32 letters. Even if we do the change compiler would not know about this feature and modify string comparing. The ***Picture 2.1*** shows the rewritten on assembly (nasm) function of comparing two strings.
 
 <img src="Investigation/Picture%202.1.1.jpg" alt="Picture 2.1" width="600">
 ***Picture 2.1***
 
 Usage of assembly lines is 7.
 
-At the second part it was decided to rewrite finding element in the list cycle by extended assembly. Using flag -masm=intel the author provided herself an opportunity to write it using intel syntax. The idea of boosting is in using calee-saving registers to avoid the excessive amount of pushes into the stack. Looking ahead we can observe that rewritten string comparing function does not need any pushes. Thus we work only with registers that even a little boost the program.
+At the second part it was decided to rewrite finding element in the list cycle by extended assembly. Using flag `-masm=intel` the author provided herself an opportunity to write it using intel syntax. The idea of boosting is in using calee-saving registers to avoid the excessive amount of pushes into the stack. Looking ahead we can observe that rewritten string comparing function does not need any pushes. Thus we work only with registers that even a little boost the program.
 
 <img src="Investigation/Picture%202.2.jpg" alt="Picture 2.2" width="600">
 ***Picture 2.2***
 
 Usage of assembly lines is 22.
+
 Total usage of assembly lines is 29. 
 
 ### ***THE THIRD STEP***
@@ -63,14 +68,16 @@ Comparing of two programs. We launch kcachegrind with two generated callgrind fi
 
 <img src="Investigation/Picture%202.3.png" alt="Picture 2.3" width="600">
 ***Picture 2.3***
+Comparing two functions with flag `-O0`.
 
 Putting the data in the formula (1) we gain the acceleration factor 1.25.
 Calculating with formula (2) the total result is 43.
 
-The calculations for optimization flag -O1 are 1.27 and 44. They are shown in the ***Picture 2.4***
+The calculations for optimization flag `-O1` are 1.27 and 44. They are shown in the ***Picture 2.4***
 
 <img src="Investigation/Picture%202.4.png" alt="Picture 2.4" width="600">
 ***Picture 2.4***
+Comparing two functions with flag `-O1`.
 
 ### ***THE FORTH STEP: ADDITIONAL***
 
@@ -91,7 +98,7 @@ Comparison with slow version (***Picture 4.4***):
 <img src="Investigation/Picture%204.4.png" alt="Picture 4.4" width="600">
 ***Picture 4.4***
 
-Final calculations for optimization flag -O1 are 1.41 and 49.
+Final calculations for optimization flag `-O1` are 1.41 and 49.
 
 **RESULTS**
 -----------
