@@ -45,7 +45,7 @@ Profiling by the category "self" showed that the most used functions were strcmp
 
 As strcmp function uses avx registers, we needed to make the comparing much easier. That is why it was decided to fix the size of key word as 32, as 32 bytes is the size of the avx register. However the author decided not to change the type of the list data into char[64], limited herself to check the minimum size and leaving it to the user due to the meaning can be longer that 32 letters. Even if we do the change compiler would not know about this feature and modify string comparing. The ***Picture 2.1*** shows the rewritten on assembly (nasm) function of comparing two strings.
 
-<img src="Investigation/Picture%202.1.jpg" alt="Picture 2.1" width="600">
+<img src="Investigation/Picture%202.1.1.jpg" alt="Picture 2.1" width="600">
 ***Picture 2.1***
 
 Usage of assembly lines is 7.
