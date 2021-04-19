@@ -126,7 +126,7 @@ That shows different ways of decreasing the time program works.
 
 **CONCLUSION**
 --------------
-After this investigation we can infer that extended assembly and calling assembly function bossts the program due to direct access to registers and own understanding of guaranteed values.
+After this investigation we can infer that extended assembly and calling assembly function boosts the program due to direct access to registers and own understanding of guaranteed values.
 
 **LITERATURE AND LINKS**
 ------------------------
