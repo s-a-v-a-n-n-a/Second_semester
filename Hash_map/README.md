@@ -102,6 +102,21 @@ The acceleration of the functions is clearly shown on the bar graph (***Picture 
 <img src="Investigation/Picture%205.jpg" alt="Picture 5" width="600">
 ***Picture 5***
 
+**DISCUSSION**
+--------------
+Results of this investigation can be divided into three parts:
+<li>
+  Boosting with assembly lines.
+</li>
+<li>
+  Boosting calculating the hash using intrinsics.
+</li>
+<li>
+  Boosting with using different flags.
+</li>
+
+That shows different ways of decreasing the time program works.
+
 **CONCLUSION**
 --------------
 After this investigation we can infer that extended assembly and calling assembly function bossts the program due to direct access to registers and own understanding of guaranteed values.
