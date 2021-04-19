@@ -5,32 +5,34 @@
 Research was conducted by a first year student at MIPT Anna Savchuk in 2021.
 
 **INTRODUCTION**
-------------------------
-In field of working with data using of hashmaps is widely spread. Hashmap is a structure thst provides an opportunity of inserting, finding and deleting information for the O(1) of time. One of the types of hashamps is the one with chaining. It is considered that data with the same hash are storing in the same chain.
+----------------
+In field of working with data using of hashmaps is widely spread. Hashmap is a structure that provides an opportunity of inserting, finding and deleting information for the O(1) of time. One of the types of hashamps is the one with chaining. It is considered that data with the same hash are storing in the same chain.
 However such hashmap is not fast enough. Even optimized by compiler, we do not gain expected result. That happens due to parts of the algorithm that are not clear for optimizer. Contrariwise this knowledge is available for a programmer, who can achieve the boost by different restrictions.  
 Here we come up with the idea to boost the work of program by rewriting two functions on assembler in two different ways on flag -O0 and -O1.
-These optimization can be useful in the field of working with data as there is a dependence of the correct operation of databases on the speed of work with them.
+These optimization can be useful in data manipulation as there is a dependence of the correct operation of databases on the speed of work with them.
 
 **WORK PROGRESS**
 -----------------
 ### ***MATERIALS***
 
-In this particular case hashmap will contain key words and meanings so it seems to be a dictionary.
-The program was written with using fast [list structure](https://github.com/s-a-v-a-n-n-a/My-List) that was written by the author earlier.
+In this particular case hashmap will contain key words and their meanings that were retrieved from a [dictionary](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Hash_map/dict/dict.txt).
+The program was written with using fast [list structure](https://github.com/s-a-v-a-n-n-a/My-List) that was written by the author in the previous semester.
 For measuring duration of the work of function profiler callgrind was used with the application kcachegrind.
 Work was done on the Ubuntu 20.04.2 with the processor intel core i7.
 
 ### ***RESTRICTIONS***
 
-For easier work with hashtable it was decided to use ony insert at back of the list function as it provides direct access to tha data. Thus in addition function of deleting elements was replaced.
+For easier work with hashtable it was decided to use ony insertion at back functionas it provides direct access to the data. Thus in addition function of deleting elements was replaced.
 Lately fixing the size of the key was used.
-Measurint the time of program working also included the fact that the major of time user finds words and the most of the inserts are made at the beginning of the program, when the dictionary is loaded.
+Measuring the time of program working also included the fact that the major of time user finds words and the most of the inserts are made at the beginning of the program, when the dictionary is loaded.
 
 ### ***FORMULAS FOR CALCULATING THE BOOST***
 
 Using profiler and comparing two results the coefficient of the boost we will calculate is (second result - first result)/(first result). (1)
+
 To calculate the total boost the formula we wil use (the coefficient of the boost/amount of the lines on assembly) * 1000. (2)
 
+### ***THE FIRST STEP***
 
 Writing the hashmap interface. The functions were hash_get(getting the hash of the key, that is variation of polinomial hash), hash_find_element(returns the index of the element or -1 if it is absent), hash_add_element(inserts the element if it is absent) and hash_resize_and_rehash(increases the size of the hashmap due to the load factor, which is 75%).
 
