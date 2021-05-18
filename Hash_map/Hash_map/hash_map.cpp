@@ -1,7 +1,7 @@
 #include "hash_map.h"
 
-#define ASM_FUNC
-#define CRC_HASH
+//#define ASM_FUNC
+//#define CRC_HASH
 
 #define LENGTH_WARNING                                                   \
     fprintf(stderr, "-----------------!WARNING!----------------\n");     \
@@ -260,7 +260,7 @@ long long hash_find_element(List *same_hash, char *word)
 }
 
 
-__attribute__((noinline)) size_t hash_get(char *string, size_t field_size)
+__attribute__((noinline)) size_t hash_get(const char *string, size_t field_size)
 {
     assert(string);
 

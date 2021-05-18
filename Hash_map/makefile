@@ -1,4 +1,4 @@
-CFLAGS = -g -masm=intel -no-pie -march=native -O1
+CFLAGS = -g -masm=intel -no-pie -march=native -O2
 
 all: List.o reading_data.o hash_map.o main.o 	
 	g++ main.oList.o reading_data.o hash_map.o -o hashmap
