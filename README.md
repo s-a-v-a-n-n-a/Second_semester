@@ -38,7 +38,12 @@ The function of merging was also accelerated by intrinsics.
 The realisation of hashmap based on [My_List](https://github.com/s-a-v-a-n-n-a/My_List). It already has its own speed up investigation so I [link](https://github.com/s-a-v-a-n-n-a/Second_semester/tree/main/Hash_map#readme) it here.
 Briefly, hashmap was accelerated by rewritting one function on assembler and with extended assembly in the other one. The accelaration only with these two modificatrions is 43 times (that was calculated by special formula). 
 
-**[Binary translator]()**
+**[Binary translator](https://github.com/s-a-v-a-n-n-a/Second_semester/tree/main/Binary_translator)**
 ---------------------
 Binary translator is the largest project of the second semester. It translates my small assembler (AASM) used in [My_CPU](https://github.com/s-a-v-a-n-n-a/My_CPU) into x86-64. To help myself write big code on AASM I used my funny language from [My_compiler](https://github.com/s-a-v-a-n-n-a/My_compiler) and [shellcode](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Binary_translator/automatic.sh).
 I plan to make separated repository for this program so more detailed documentation may be there.
+
+**SUMMARY**
+-----------
+During this semester, some work was done and some of the material on understanding the inner work of the processor was studied. This study is going to be continued.
+
