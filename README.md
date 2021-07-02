@@ -41,7 +41,7 @@ Briefly, hashmap was accelerated by rewritting one function on assembler and wit
 **[Binary translator](https://github.com/s-a-v-a-n-n-a/Second_semester/tree/main/Binary_translator)**
 ---------------------
 Binary translator is the largest project of the second semester. It translates my small assembler (AASM) used in [My_CPU](https://github.com/s-a-v-a-n-n-a/My_CPU) into x86-64. To help myself write big code on AASM I used my funny language from [My_compiler](https://github.com/s-a-v-a-n-n-a/My_compiler) and [shellcode](https://github.com/s-a-v-a-n-n-a/Second_semester/blob/main/Binary_translator/automatic.sh).
-I plan to make separated repository for this program so more detailed documentation may be there.
+There is a separated repository for this program so more detailed documentation is [here](https://github.com/s-a-v-a-n-n-a/Binary_translator/blob/main/README.md).
 
 **SUMMARY**
 -----------
